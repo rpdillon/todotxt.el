@@ -1,4 +1,3 @@
-
 ;; Variables that are available for customization
 (setq todotxt-file (expand-file-name "~/Dropbox/memex/todo.txt"))
 (setq todotxt-buffer-name "*todotxt*")
@@ -8,16 +7,21 @@
   (setq buffer-read-only t))
 
 ;; Setup key map
-(define-key todotxt-mode-map (kbd "l") 'todotxt-show-all)        ; (L)ist
-(define-key todotxt-mode-map (kbd "I") 'todotxt-show-incomplete) ; list (I)ncomplete
+(define-key todotxt-mode-map (kbd "l") 'todotxt-unhide-all)      ; (L)ist
+(define-key todotxt-mode-map (kbd "i") 'todotxt-show-incomplete) ; list (I)ncomplete
 (define-key todotxt-mode-map (kbd "c") 'todotxt-complete-toggle) ; (C)omplete item
 (define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
+(define-key todotxt-mode-map (kbd "d") 'todotxt-delete-item)     ; (D)elete item
 (define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
+(define-key todotxt-mode-map (kbd "e") 'todotxt-edit-line)       ; (E)dit
+(define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ; 
+(define-key todotxt-mode-map (kbd "s") 'save-buffer)             ; (S)ave
 (define-key todotxt-mode-map (kbd "n") 'next-line)               ; (N)ext
 (define-key todotxt-mode-map (kbd "p") 'previous-line)           ; (P)revious
-(define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ; Same as Org =)
 
 ;; Utility functions
+
+; Test whether or not the current line contains text that matches the provided regular expression
 (defun current-line-re-match (re)
   (let ((line-number (line-number-at-pos)))
     (save-excursion
@@ -26,6 +30,7 @@
           (equal line-number (line-number-at-pos))
         nil))))
 
+; Test whether or not the current line contains text that matches the provided string
 (defun current-line-match (s)
   (let ((line-number (line-number-at-pos)))
     (save-excursion
@@ -34,35 +39,41 @@
           (equal line-number (line-number-at-pos))
         nil))))
 
+; Returns whether or not the current line is "complete"
 (defun complete-p ()
   (current-line-re-match "^x .*?$"))
 
-(defun filter-out (predicate)
-  (todotxt-show-all)
-  (beginning-of-buffer)
-  (save-excursion
-    (while (progn
-             (while (funcall predicate)
-               (progn
-                 (setq inhibit-read-only 't)
-                 (kill-line)
-                 (kill-line)
-                 (setq inhibit-read-only nil)))
-             (equal (forward-line) 0)))))
-
+; Hides the current line, returns 't if executed
 (defun hide-line ()
+  (beginning-of-line)
+  (let ((beg (point)))
+    (forward-line)
+    (setq inhibit-read-only 't)
+    (put-text-property beg (point) 'invisible 't)
+    (setq inhibit-read-only nil)
+    't))
+
+; Returns whether or not the current line is empty
+(defun line-empty-p ()
   (save-excursion
     (beginning-of-line)
-    (let ((beg (point)))
-      (forward-line)
-      (put-text-property beg (point) 'intangible 't)
-      (put-text-property beg (point) 'invisible 't))))
+    (let ((b (point)))
+      (end-of-line)
+      (equal (point) b))))
 
+; Hides lines for which the provided predicate returns 't
+(defun filter-out (predicate)
+  (save-excursion
+    (beginning-of-buffer)
+    (while (progn
+             (if (and (not (line-empty-p)) (funcall predicate))
+                 (hide-line)
+               (equal (forward-line) 0))))))
 
 ;; Externally visible functions
-(defun todotxt-show-all ()
+(defun todotxt ()
   (interactive)
-  (let ((buf (get-buffer-create todotxt-buffer-name)))
+  (let ((buf (find-file-noselect todotxt-file)))
     (if (equal (get-buffer-window buf) nil)
         (progn
           (let* ((height (nth 3 (window-edges)))
@@ -71,10 +82,6 @@
           (select-window win)
           (switch-to-buffer buf)
           (todotxt-mode))))
-    (setq inhibit-read-only 't)
-    (erase-buffer)
-    (insert-file-contents todotxt-file)
-    (setq inhibit-read-only nil)
     (beginning-of-buffer)))
 
 (defun todotxt-show-incomplete ()
@@ -87,22 +94,39 @@
     (setq inhibit-read-only 't)
     (end-of-buffer)
     (insert item)
+    (save-buffer)
     (setq inhibit-read-only nil)))
+
+(defun todotxt-delete-item ()
+  (interactive)
+  (beginning-of-line)
+  (setq inhibit-read-only 't)
+  (kill-line)
+  (kill-line)
+  (setq inhibit-read-only nil))
 
 (defun todotxt-bury ()
   (interactive)
-  (if (equal todotxt-buffer-name (buffer-name))
-      (progn
-        (bury-buffer)
-        (delete-window))))
+  (bury-buffer)
+  (delete-window))
 
-; Some way to stack filters?
+(defun todotxt-unhide-all ()
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (let ((beg (point)))
+      (end-of-buffer)
+      (setq inhibit-read-only 't)
+      (remove-text-properties beg (point) '(intangible nil invisible nil))
+      (setq inhibit-read-only nil))))
+
 (defun todotxt-filter-for (keyword)
-  (interactive "sFilter keyword: ")
+  (interactive "sLook for lines with keyword: ")
   (save-excursion
     (beginning-of-buffer)
     (filter-out (lambda () (not (current-line-match keyword))))))
 
+;todo
 (defun todotxt-complete-toggle ()
   (interactive)
   (if (complete-p)
