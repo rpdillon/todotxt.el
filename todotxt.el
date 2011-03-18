@@ -1,9 +1,12 @@
 ;; Variables that are available for customization
 (setq todotxt-file (expand-file-name "~/Dropbox/memex/todo.txt"))
-(setq todotxt-buffer-name "*todotxt*")
+
+;; Font Lock
+(setq todotxt-keywords '("\[+|@][^[:space:]]*"))
 
 ;; Setup a major mode for todotxt
 (define-derived-mode todotxt-mode text-mode "todotxt" "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
+  (setq font-lock-defaults '(todotxt-keywords))
   (setq buffer-read-only t))
 
 ;; Setup key map
@@ -13,7 +16,8 @@
 (define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
 (define-key todotxt-mode-map (kbd "d") 'todotxt-delete-item)     ; (D)elete item
 (define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
-(define-key todotxt-mode-map (kbd "e") 'todotxt-edit-line)       ; (E)dit
+(define-key todotxt-mode-map (kbd "p") 'todotxt-purge)           ; (P)urge completed items
+(define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit
 (define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ; 
 (define-key todotxt-mode-map (kbd "s") 'save-buffer)             ; (S)ave
 (define-key todotxt-mode-map (kbd "n") 'next-line)               ; (N)ext
@@ -40,6 +44,7 @@
         nil))))
 
 ; Returns whether or not the current line is "complete"
+; Used as part of a redefined filter for showing incomplete items only
 (defun complete-p ()
   (current-line-re-match "^x .*?$"))
 
@@ -97,6 +102,21 @@
     (save-buffer)
     (setq inhibit-read-only nil)))
 
+(defun todotxt-edit-item ()
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    (let ((beg (point)))
+      (end-of-line)
+      (let* ((initial-text (buffer-substring beg (point)))
+             (new-text (read-from-minibuffer "Edit: " initial-text)))
+        (beginning-of-line)
+        (setq inhibit-read-only 't)
+        (kill-line)
+        (insert new-text)
+        (save-buffer)
+        (setq inhibit-read-only nil)))))
+
 (defun todotxt-delete-item ()
   (interactive)
   (beginning-of-line)
@@ -126,11 +146,18 @@
     (beginning-of-buffer)
     (filter-out (lambda () (not (current-line-match keyword))))))
 
-;todo
 (defun todotxt-complete-toggle ()
   (interactive)
-  (if (complete-p)
-      (message "null")
-    (message "non-null")))
+  (save-excursion
+    (setq inhibit-read-only 't)
+    (if (complete-p)
+        (progn
+          (beginning-of-line)
+          (delete-char 2))
+      (progn
+        (beginning-of-line)
+        (insert "x ")))
+    (setq inhibit-read-only nil)
+    (save-buffer)))
   
 (provide 'todotxt)
