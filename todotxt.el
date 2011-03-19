@@ -2,6 +2,10 @@
 (setq todotxt-file (expand-file-name "~/Dropbox/memex/todo.txt"))
 
 ;; Font Lock
+(setq keywords-regexp "\[+|@][^[:space:]]*")
+;; TODO: need to figure out a way to include the string in this list.
+;; Straightforward unquoting doesn't work, so I'm making some other
+;; n00b mistake.
 (setq todotxt-keywords '("\[+|@][^[:space:]]*"))
 
 ;; Setup a major mode for todotxt
@@ -14,10 +18,10 @@
 (define-key todotxt-mode-map (kbd "i") 'todotxt-show-incomplete) ; list (I)ncomplete
 (define-key todotxt-mode-map (kbd "c") 'todotxt-complete-toggle) ; (C)omplete item
 (define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
-(define-key todotxt-mode-map (kbd "d") 'todotxt-delete-item)     ; (D)elete item
 (define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
-(define-key todotxt-mode-map (kbd "p") 'todotxt-purge)           ; (P)urge completed items
-(define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit
+(define-key todotxt-mode-map (kbd "P") 'todotxt-purge)           ; (P)urge completed items
+(define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit item
+(define-key todotxt-mode-map (kbd "t") 'todotxt-tag-item)        ; (T)ag item
 (define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ; 
 (define-key todotxt-mode-map (kbd "s") 'save-buffer)             ; (S)ave
 (define-key todotxt-mode-map (kbd "n") 'next-line)               ; (N)ext
@@ -75,6 +79,26 @@
                  (hide-line)
                (equal (forward-line) 0))))))
 
+
+(defun get-tag-completion-list-from-string (string)
+  (save-excursion
+    (let ((completion-list '())
+          (start-index 0))
+      (while (string-match keywords-regexp string start-index)
+        (let ((tag (match-string-no-properties 0 string)))
+          (if (not (member tag completion-list))
+              (progn
+                (setq completion-list (cons tag completion-list))))
+          (setq start-index (match-end 0))))
+      completion-list)))
+
+(defun get-current-line-as-string ()
+  (save-excursion
+    (beginning-of-line)
+    (let ((beg (point)))
+      (end-of-line)
+      (buffer-substring beg (point)))))
+
 ;; Externally visible functions
 (defun todotxt ()
   (interactive)
@@ -105,25 +129,37 @@
 (defun todotxt-edit-item ()
   (interactive)
   (save-excursion
-    (beginning-of-line)
-    (let ((beg (point)))
-      (end-of-line)
-      (let* ((initial-text (buffer-substring beg (point)))
-             (new-text (read-from-minibuffer "Edit: " initial-text)))
-        (beginning-of-line)
-        (setq inhibit-read-only 't)
-        (kill-line)
-        (insert new-text)
-        (save-buffer)
-        (setq inhibit-read-only nil)))))
+    (let ((new-text (read-from-minibuffer "Edit: " (get-current-line-as-string))))
+      (beginning-of-line)
+      (setq inhibit-read-only 't)
+      (kill-line)
+      (insert new-text)
+      (save-buffer)
+      (setq inhibit-read-only nil))))
 
-(defun todotxt-delete-item ()
+(defun todotxt-tag-item ()
   (interactive)
-  (beginning-of-line)
-  (setq inhibit-read-only 't)
-  (kill-line)
-  (kill-line)
-  (setq inhibit-read-only nil))
+  (let* ((new-tag (completing-read "Tags: " (get-tag-completion-list-from-string (buffer-string))))e
+         (new-text (concat (get-current-line-as-string) " " new-tag)))
+    (beginning-of-line)
+    (setq inhibit-read-only 't)
+    (kill-line)
+    (insert new-text)
+    (save-buffer)
+    (setq inhibit-read-only nil)))
+
+(defun todotxt-purge ()
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (setq inhibit-read-only 't)    
+    (while (progn
+             (if (and (not (line-empty-p)) (complete-p))
+                 (progn
+                   (kill-line 1)
+                   't)
+               (equal (forward-line) 0))))
+    (setq inhibit-read-only nil)))
 
 (defun todotxt-bury ()
   (interactive)
@@ -140,11 +176,12 @@
       (remove-text-properties beg (point) '(intangible nil invisible nil))
       (setq inhibit-read-only nil))))
 
-(defun todotxt-filter-for (keyword)
-  (interactive "sLook for lines with keyword: ")
-  (save-excursion
-    (beginning-of-buffer)
-    (filter-out (lambda () (not (current-line-match keyword))))))
+(defun todotxt-filter-for ()
+  (interactive)
+  (let* ((keyword (completing-read "Tag or keyword: " (get-tag-completion-list-from-string (buffer-string)))))
+    (save-excursion
+      (beginning-of-buffer)
+      (filter-out (lambda () (not (current-line-match keyword)))))))
 
 (defun todotxt-complete-toggle ()
   (interactive)
