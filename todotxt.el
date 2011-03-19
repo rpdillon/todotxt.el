@@ -1,5 +1,64 @@
+;; todotxt.el -- A major mode for editing todo.txt files
+
+;; Filename: todotxt.el
+
+;; Description: A major mode for editing todo.txt files
+;; Author: Rick Dillon <rpdillon@etherplex.org>
+;; Copyright (C) 2011, Rick Dillon, all rights reserved.
+;; Created: 14 March 2011
+;; Version: 0.1
+;; URL: https://github.com/rpdillon/todotxt.el
+;; Keywords: todo.txt, todotxt, todotxt.el
+;; Compatibility: GNU Emacs 22 ~ 23
+;;
+
+;; This file is NOT part of GNU Emacs
+
+;; License
+;;
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program; see the file COPYING.  If not, write to
+;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth
+;; Floor, Boston, MA 02110-1301, USA.
+
+;; Commentary:
+;; This file provides a Emacs interface to the todo.txt file format
+;; use by Gina Trapani's Todo.txt command-line tool
+;; (http://todotxt.com/) and Android application
+;; (https://github.com/ginatrapani/todo.txt-touch).
+;;
+;; Setup:
+;;  - Put todotxt.el somewhere on your Emacs path
+;;  - Load todotxt using (require 'todotxt) in you .emacs (or other initialization) file
+;;  - Customize the variable 'todotxt-file' with the location of your todo.txt file.
+;;  - View the file with M-x todotxt
+;;  - Bind 'todotxt' to some accelerator like C-x t: (global-set-key (kbd "C-x t") 'todotxt)
+;;
+;; Usage:
+;;  - Navigate up and down with 'n' and 'p'
+;;  - Toggle completion of an item with 'c'
+;;  - Add a new item with 'a'
+;;  - Tag the current item with 't' (use tab completion as necessary)
+;;  - Edit the current item with 'e'
+;;  - Show only incomplete items with 'i'
+;;  - Filter for any keyword or tag with '/'
+
 ;; Variables that are available for customization
-(setq todotxt-file (expand-file-name "~/Dropbox/memex/todo.txt"))
+(defcustom todotxt-file (expand-file-name "~/todo.txt")
+       "The location of your todo.txt file."
+       :type 'string
+       :require 'todotxt
+       :group 'todotxt)
 
 ;; Font Lock
 (setq keywords-regexp "\[+|@][^[:space:]]*")
@@ -19,6 +78,7 @@
 (define-key todotxt-mode-map (kbd "c") 'todotxt-complete-toggle) ; (C)omplete item
 (define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
 (define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
+(define-key todotxt-mode-map (kbd "r") 'todotxt-prioritize)      ; P(r)ioritize
 (define-key todotxt-mode-map (kbd "P") 'todotxt-purge)           ; (P)urge completed items
 (define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t") 'todotxt-tag-item)        ; (T)ag item
@@ -51,6 +111,9 @@
 ; Used as part of a redefined filter for showing incomplete items only
 (defun complete-p ()
   (current-line-re-match "^x .*?$"))
+
+(defun has-priority-p ()
+  (current-line-re-match "^\([A-Z]\) .*?$"))
 
 ; Hides the current line, returns 't if executed
 (defun hide-line ()
@@ -126,6 +189,22 @@
     (save-buffer)
     (setq inhibit-read-only nil)))
 
+(defun todotxt-prioritize ()
+  (interactive)
+  (let ((priority (read-from-minibuffer "Priority: ")))
+    (save-excursion
+      (setq inhibit-read-only 't)
+      (if (has-priority-p)
+          (progn
+            (beginning-of-line)
+            (delete-char 4)))
+      (if (not (equal priority ""))
+          (progn
+            (beginning-of-line)
+            (insert (concat "(" priority ") "))
+            (save-buffer)
+            (setq inhibit-read-only nil))))))
+
 (defun todotxt-edit-item ()
   (interactive)
   (save-excursion
@@ -155,6 +234,7 @@
     (setq inhibit-read-only 't)    
     (while (progn
              (if (and (not (line-empty-p)) (complete-p))
+                 ;; Todo: Consider a push to complete.txt?
                  (progn
                    (kill-line 1)
                    't)
