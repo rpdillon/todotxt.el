@@ -1,0 +1,133 @@
+#+TITLE:     Todo.txt For Emacs (todotxt.el)
+#+AUTHOR:    R. P. Dillon
+#+EMAIL:     rpdillon@etherplex.org
+#+DATE:      2011-03-19 Sat
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:   
+#+LINK_HOME: 
+#+XSLT:
+* Introduction
+  [[http://todotxt.com][Todo.txt]] is a tool written by Gina Trapani and a community of eager
+  hackers.  It allows the management of a text-based simple todo list
+  manager from the command line.  Because it is text, it can be used
+  on just about any computing decice, however, and has therefore
+  inspired tools written in a variety of languages on a variety of
+  platforms.
+
+  There is a long and glorious tradition of using plain text for a
+  myriad of tasks, and Emacs is one of the best tools around for
+  working with plain text.  It is in this tradition that todotxt.el
+  was written.  It aims to provide a fast, easy and effective
+  mechanism for creating or accessing your existing Todo.txt lists
+  from the comfort of your Emacs session.
+
+  Of course, it is completely compatible with all the features from
+  Todo.txt CLI and Todo.txt Touch (on Android) including contexts,
+  projects and priorities.  It supports filtering by context and
+  project with tab completion, and has fairly good support for common
+  actions associated with tasks including:
+
+  - Listing all tasks ('l')
+  - Navigation up and down ('p' and 'n')
+  - Showing only incomplete tasks ('i')
+  - Adding a task ('a')
+  - Completing a task ('c')
+  - Tagging a task ('t') with a project and/or context
+  - Setting the priority on a task ('r')
+  - Purging (deleting) completed tasks ('P')
+  - Freeform editing of a task ('e')
+  - Progressive filtering of the task list ('/')
+  - Saving ('s') (only needed for destructive actions -- everything
+    else is saved automatically)
+
+* Installation
+  Installation is similar to that which you would find with any Emacs package.
+  1. You'll need to put todotxt.el somewhere on your Emacs =load-path=.
+  2. Load todotxt using =(require 'todotxt)= in you .emacs (or other
+     initialization) file.  You can load it for evaluation by typing
+     that command either into an evaluation prompt (M-:) or by putting
+     it in =*scratch*= and pressing C-j at the end of the line
+  3. You need to tell todotxt where you todo.txt file is.  You can do
+     so by customizing the variable =todotxt-file= either by editing
+     your initialization file or by simply using =M-x
+     customize-variable=.
+  4. You can then interact with your todo list using =M-x todotxt=
+  5. Bind the =todotxt= function to some accelerator like C-x t using
+     =(global-set-key (kbd "C-x t") 'todotxt)=
+
+* Usage
+** Listing
+   You can list all the tasks in the file using =l=.  From there, you
+   may want to pare it down using =i= to only show incomplete tasks,
+   or by filtering (see below).
+** Adding
+   You can add a new task with =a=.  Just type the task into the
+   minibuffer and press =enter=.
+** Filtering
+   You can filter the list using =/=.  This supports completion of any
+   tags (either projects [indicated with a =+=] or contexts [indicated
+   with a =@=]) using =tab=, or you can type in any keyword or phrase
+   you want to filter the list.  Only lines containing that word or
+   phrase will be shown.
+
+   Filtering is progressive by default, meaning that each time you
+   filter, it filters the visible list.  To get back all the results
+   before filtering, use =l= to show all tasks before you initiate the
+   filter.
+** Tagging
+   You can add a tag (again, either a project or a context) with =t=.
+   This will then prompt you for a tag, which it will append to
+   selected item.  If you want to add a tag that already exists, you
+   can use tab-completion to fill it in.
+** Prioritizing
+   You can add (or remove, keep reading) a priority on an item with
+   =r=.  If the item already has a priority, it will be overwritten.
+   If the item has a priority and you simply press =enter= without
+   specifying a new one, the current priority will be deleted.
+   Priorities should be a single upper-case character in the range
+   A-Z.
+** Editing
+   Sometimes the built in features aren't enough, and you just want to
+   do some freeform edits on an item.  This is easy to do with =e=.
+   When you're finished editing, just press enter and your changes
+   will be saved.
+** Completing
+   A task's completion state is toggled with =c=.
+** Purging
+   Completed tasks can be permanently deleted with =P=.  Currently,
+   this is the only destructive action you can take.  I try and
+   protect against mistakes in two ways:
+   - Destructive actions will be initiated using a capital letter to
+     help prevent mistakes
+   - Destructive actions do not automatically save the file.  If you
+     want to save the file after you have deleted some of the tasks,
+     you can do so with =s=.  Other actions automatically save the
+     file for you.
+** Quitting
+   Like many other modes in Emacs, todotxt is meant to be brought up
+   when you need it and dismissed just as quickly.  You can do so by
+   pressing =q=.
+* Limitations
+  - There is no checking to make sure you use a priority between A and
+    Z.  If you choose some other priority, like "banana" todotxt.el
+    will insert it, but it will not be compatible with other Todo.txt
+    tools.  Further, if you try to change it using the priority
+    feature again, it won't be recognized as a priority.  The
+    workaround is to edit manually using =e=.
+  - Currently, todotxt isn't really using font-lock as much as it
+    should.  So, there's no special font-locking happening for
+    completed items, for example.
+  - There's no indication that the list is filtered.  If you're unsure
+    of the filter state, press =l= to make sure you're really seeing
+    all the items.
+* Known Bugs
+  - Filtering sometimes results in the cursor jumping between the
+    first two characters of the first filtered line when 'p' is
+    pressed repeatedly
