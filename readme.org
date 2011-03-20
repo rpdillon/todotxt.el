@@ -17,9 +17,8 @@
   [[http://todotxt.com][Todo.txt]] is a tool written by Gina Trapani and a community of eager
   hackers.  It allows the management of a text-based simple todo list
   manager from the command line.  Because it is text, it can be used
-  on just about any computing decice, however, and has therefore
-  inspired tools written in a variety of languages on a variety of
-  platforms.
+  on just about any computing device, and therefore has inspired tools
+  written in a variety of languages on an array of platforms.
 
   There is a long and glorious tradition of using plain text for a
   myriad of tasks, and Emacs is one of the best tools around for
