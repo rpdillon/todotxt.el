@@ -60,16 +60,28 @@
        :require 'todotxt
        :group 'todotxt)
 
-;; Font Lock
-(setq keywords-regexp "\[+|@][^[:space:]]*")
-;; TODO: need to figure out a way to include the string in this list.
-;; Straightforward unquoting doesn't work, so I'm making some other
-;; n00b mistake.
-(setq todotxt-keywords '("\[+|@][^[:space:]]*"))
+(setq tags-regexp "\[+|@][^[:space:]]*") ; Used to find keywords for completion
+(setq projects-regexp "\+[^[:space:]]*")
+(setq contexts-regexp "\@[^[:space:]]*")
+(setq complete-regexp "^x .*?$")
+
+;; Font Lock and Faces
+(defface todotxt-complete-face '(
+  (t (:strike-through t)))
+  "Todotxt face used for completed task."
+  :group 'todotxt-highlighting-faces)
+
+(defvar todotxt-complete-face 'todotxt-complete-face
+  "Todotxt mode face used for completed task.")
+
+(setq todotxt-highlight-regexps
+      `((,projects-regexp 0 font-lock-variable-name-face t)
+        (,contexts-regexp 0 font-lock-keyword-face t)
+        (,complete-regexp 0 todotxt-complete-face t)))
 
 ;; Setup a major mode for todotxt
 (define-derived-mode todotxt-mode text-mode "todotxt" "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
-  (setq font-lock-defaults '(todotxt-keywords))
+  (setq font-lock-defaults '(todotxt-highlight-regexps))
   (setq buffer-read-only t))
 
 ;; Setup key map
@@ -89,8 +101,9 @@
 
 ;; Utility functions
 
-; Test whether or not the current line contains text that matches the provided regular expression
-(defun current-line-re-match (re)
+
+(defun todotxt-current-line-re-match (re)
+  "Test whether or not the current line contains text that matches the provided regular expression"
   (let ((line-number (line-number-at-pos)))
     (save-excursion
       (beginning-of-line)
@@ -98,8 +111,9 @@
           (equal line-number (line-number-at-pos))
         nil))))
 
-; Test whether or not the current line contains text that matches the provided string
-(defun current-line-match (s)
+
+(defun todotxt-current-line-match (s)
+  "Test whether or not the current line contains text that matches the provided string"
   (let ((line-number (line-number-at-pos)))
     (save-excursion
       (beginning-of-line)
@@ -107,16 +121,16 @@
           (equal line-number (line-number-at-pos))
         nil))))
 
-; Returns whether or not the current line is "complete"
-; Used as part of a redefined filter for showing incomplete items only
-(defun complete-p ()
-  (current-line-re-match "^x .*?$"))
+(defun todotxt-complete-p ()
+  "Returns whether or not the current line is 'complete'. Used as part of a redefined filter for showing incomplete items only"
+  (todotxt-current-line-re-match complete-regexp))
 
-(defun has-priority-p ()
-  (current-line-re-match "^\([A-Z]\) .*?$"))
+(defun todotxt-has-priority-p ()
+  (todotxt-current-line-re-match "^\([A-Z]\) .*?$"))
 
-; Hides the current line, returns 't if executed
-(defun hide-line ()
+
+(defun todotxt-hide-line ()
+  "Hides the current line, returns 't"
   (beginning-of-line)
   (let ((beg (point)))
     (forward-line)
@@ -125,29 +139,31 @@
     (setq inhibit-read-only nil)
     't))
 
-; Returns whether or not the current line is empty
-(defun line-empty-p ()
+
+(defun todotxt-line-empty-p ()
+  "Returns whether or not the current line is empty"
   (save-excursion
     (beginning-of-line)
     (let ((b (point)))
       (end-of-line)
       (equal (point) b))))
 
-; Hides lines for which the provided predicate returns 't
-(defun filter-out (predicate)
+
+(defun todotxt-filter-out (predicate)
+  "Hides lines for which the provided predicate returns 't"
   (save-excursion
     (goto-char (point-min))
     (while (progn
-             (if (and (not (line-empty-p)) (funcall predicate))
-                 (hide-line)
+             (if (and (not (todotxt-line-empty-p)) (funcall predicate))
+                 (todotxt-hide-line)
                (equal (forward-line) 0))))))
 
-
-(defun get-tag-completion-list-from-string (string)
+(defun todotxt-get-tag-completion-list-from-string (string)
+  "Search the buffer for tags (strings beginning with either '@' or '+') and return a list of them."
   (save-excursion
     (let ((completion-list '())
           (start-index 0))
-      (while (string-match keywords-regexp string start-index)
+      (while (string-match tags-regexp string start-index)
         (let ((tag (match-string-no-properties 0 string)))
           (if (not (member tag completion-list))
               (progn
@@ -155,15 +171,17 @@
           (setq start-index (match-end 0))))
       completion-list)))
 
-(defun get-current-line-as-string ()
+(defun todotxt-get-current-line-as-string ()
+  "Return the text of the line in which the point currently resides."
   (save-excursion
     (beginning-of-line)
     (let ((beg (point)))
       (end-of-line)
       (buffer-substring beg (point)))))
 
-;; Externally visible functions
+;;; Externally visible functions
 (defun todotxt ()
+  "Open the todo.txt buffer.  If one already exists, bring it to the front and focus it.  Otherwise, create one and load the data from 'todotxt-file'."
   (interactive)
   (let ((buf (find-file-noselect todotxt-file)))
     (if (equal (get-buffer-window buf) nil)
@@ -177,10 +195,12 @@
     (goto-char (point-min))))
 
 (defun todotxt-show-incomplete ()
+  "Filter out complete items from the todo list."
   (interactive)
-  (filter-out 'complete-p))
+  (todotxt-filter-out 'todotxt-complete-p))
 
 (defun todotxt-add-item (item)
+  "Prompt for an item to add to the todo list and append it to the file, saving afterwards."
   (interactive "sItem to add: ")
   (save-excursion
     (setq inhibit-read-only 't)
@@ -194,7 +214,7 @@
   (let ((priority (read-from-minibuffer "Priority: ")))
     (save-excursion
       (setq inhibit-read-only 't)
-      (if (has-priority-p)
+      (if (todotxt-has-priority-p)
           (progn
             (beginning-of-line)
             (delete-char 4)))
@@ -208,7 +228,7 @@
 (defun todotxt-edit-item ()
   (interactive)
   (save-excursion
-    (let ((new-text (read-from-minibuffer "Edit: " (get-current-line-as-string))))
+    (let ((new-text (read-from-minibuffer "Edit: " (todotxt-get-current-line-as-string))))
       (beginning-of-line)
       (setq inhibit-read-only 't)
       (kill-line)
@@ -218,8 +238,8 @@
 
 (defun todotxt-tag-item ()
   (interactive)
-  (let* ((new-tag (completing-read "Tags: " (get-tag-completion-list-from-string (buffer-string))))e
-         (new-text (concat (get-current-line-as-string) " " new-tag)))
+  (let* ((new-tag (completing-read "Tags: " (todotxt-get-tag-completion-list-from-string (buffer-string))))e
+         (new-text (concat (todotxt-get-current-line-as-string) " " new-tag)))
     (beginning-of-line)
     (setq inhibit-read-only 't)
     (kill-line)
@@ -233,7 +253,7 @@
     (goto-char (point-min))
     (setq inhibit-read-only 't)    
     (while (progn
-             (if (and (not (line-empty-p)) (complete-p))
+             (if (and (not (todotxt-line-empty-p)) (todotxt-complete-p))
                  ;; Todo: Consider a push to complete.txt?
                  (progn
                    (kill-line 1)
@@ -258,18 +278,18 @@
 
 (defun todotxt-filter-for (arg)
   (interactive "p")
-  (let* ((keyword (completing-read "Tag or keyword: " (get-tag-completion-list-from-string (buffer-string)))))
+  (let* ((keyword (completing-read "Tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
     (save-excursion
       (if (equal arg 4)
           (todotxt-unhide-all))
       (goto-char (point-min))
-      (filter-out (lambda () (not (current-line-match keyword)))))))
+      (todotxt-filter-out (lambda () (not (todotxt-current-line-match keyword)))))))
 
 (defun todotxt-complete-toggle ()
   (interactive)
   (save-excursion
     (setq inhibit-read-only 't)
-    (if (complete-p)
+    (if (todotxt-complete-p)
         (progn
           (beginning-of-line)
           (delete-char 2))

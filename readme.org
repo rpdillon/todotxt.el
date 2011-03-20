@@ -122,13 +122,13 @@
     tools.  Further, if you try to change it using the priority
     feature again, it won't be recognized as a priority.  The
     workaround is to edit manually using =e=.
-  - Currently, todotxt isn't really using font-lock as much as it
-    should.  So, there's no special font-locking happening for
-    completed items, for example.
   - There's no indication that the list is filtered.  If you're unsure
     of the filter state, press =l= to make sure you're really seeing
     all the items.
 * Known Bugs
+  - There's a pretty serious bug with the hiding code that is causing
+    line-specific functions to sometimes grab the wrong text when
+    commands like =e= are issued, resulting in blank text.
   - Filtering sometimes results in the cursor jumping between the
-    first two characters of the first filtered line when 'p' is
-    pressed repeatedly
+    first two characters of the first filtered line when =p= is
+    pressed repeatedly.
