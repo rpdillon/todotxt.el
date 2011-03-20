@@ -78,9 +78,11 @@
    phrase will be shown.
 
    Filtering is progressive by default, meaning that each time you
-   filter, it filters the visible list.  To get back all the results
-   before filtering, use =l= to show all tasks before you initiate the
-   filter.
+   filter, it filters the visible list.  To disable progressive
+   filtering in a particular instance, pass the universal argument to
+   the filter command, i.e. instead of just pressing =/=, press =C-u
+   /=, which will filter the entire list, not just the visible
+   entries.
 ** Tagging
    You can add a tag (again, either a project or a context) with =t=.
    This will then prompt you for a tag, which it will append to

@@ -136,7 +136,7 @@
 ; Hides lines for which the provided predicate returns 't
 (defun filter-out (predicate)
   (save-excursion
-    (beginning-of-buffer)
+    (goto-char (point-min))
     (while (progn
              (if (and (not (line-empty-p)) (funcall predicate))
                  (hide-line)
@@ -174,7 +174,7 @@
           (select-window win)
           (switch-to-buffer buf)
           (todotxt-mode))))
-    (beginning-of-buffer)))
+    (goto-char (point-min))))
 
 (defun todotxt-show-incomplete ()
   (interactive)
@@ -184,7 +184,7 @@
   (interactive "sItem to add: ")
   (save-excursion
     (setq inhibit-read-only 't)
-    (end-of-buffer)
+    (goto-char (point-max))
     (insert item)
     (save-buffer)
     (setq inhibit-read-only nil)))
@@ -230,7 +230,7 @@
 (defun todotxt-purge ()
   (interactive)
   (save-excursion
-    (beginning-of-buffer)
+    (goto-char (point-min))
     (setq inhibit-read-only 't)    
     (while (progn
              (if (and (not (line-empty-p)) (complete-p))
@@ -248,19 +248,21 @@
 
 (defun todotxt-unhide-all ()
   (interactive)
-  (save-excursion
-    (beginning-of-buffer)
-    (let ((beg (point)))
-      (end-of-buffer)
-      (setq inhibit-read-only 't)
-      (remove-text-properties beg (point) '(intangible nil invisible nil))
-      (setq inhibit-read-only nil))))
+  (goto-char (point-min))
+  (let ((beg (point)))
+    (goto-char (point-max))
+    (setq inhibit-read-only 't)
+    (remove-text-properties beg (point) '(intangible nil invisible nil))
+    (setq inhibit-read-only nil))
+  (goto-char (point-min)))
 
-(defun todotxt-filter-for ()
-  (interactive)
+(defun todotxt-filter-for (arg)
+  (interactive "p")
   (let* ((keyword (completing-read "Tag or keyword: " (get-tag-completion-list-from-string (buffer-string)))))
     (save-excursion
-      (beginning-of-buffer)
+      (if (equal arg 4)
+          (todotxt-unhide-all))
+      (goto-char (point-min))
       (filter-out (lambda () (not (current-line-match keyword)))))))
 
 (defun todotxt-complete-toggle ()
