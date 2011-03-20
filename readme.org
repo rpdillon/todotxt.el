@@ -71,10 +71,10 @@
    minibuffer and press =enter=.
 ** Filtering
    You can filter the list using =/=.  This supports completion of any
-   tags (either projects [indicated with a =+=] or contexts [indicated
-   with a =@=]) using =tab=, or you can type in any keyword or phrase
-   you want to filter the list.  Only lines containing that word or
-   phrase will be shown.
+   tags (either projects [ indicated with a =+= ] or contexts [
+   indicated with a =@= ]) using =tab=, or you can type in any keyword
+   or phrase you want to filter the list.  Only lines containing that
+   word or phrase will be shown.
 
    Filtering is progressive by default, meaning that each time you
    filter, it filters the visible list.  To disable progressive
@@ -126,9 +126,4 @@
     of the filter state, press =l= to make sure you're really seeing
     all the items.
 * Known Bugs
-  - There's a pretty serious bug with the hiding code that is causing
-    line-specific functions to sometimes grab the wrong text when
-    commands like =e= are issued, resulting in blank text.
-  - Filtering sometimes results in the cursor jumping between the
-    first two characters of the first filtered line when =p= is
-    pressed repeatedly.
+  - Testers wanted!

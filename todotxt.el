@@ -100,8 +100,6 @@
 (define-key todotxt-mode-map (kbd "p") 'previous-line)           ; (P)revious
 
 ;; Utility functions
-
-
 (defun todotxt-current-line-re-match (re)
   "Test whether or not the current line contains text that matches the provided regular expression"
   (let ((line-number (line-number-at-pos)))
@@ -110,7 +108,6 @@
       (if (re-search-forward re nil 't)
           (equal line-number (line-number-at-pos))
         nil))))
-
 
 (defun todotxt-current-line-match (s)
   "Test whether or not the current line contains text that matches the provided string"
@@ -128,17 +125,14 @@
 (defun todotxt-has-priority-p ()
   (todotxt-current-line-re-match "^\([A-Z]\) .*?$"))
 
-
 (defun todotxt-hide-line ()
   "Hides the current line, returns 't"
   (beginning-of-line)
   (let ((beg (point)))
     (forward-line)
-    (setq inhibit-read-only 't)
-    (put-text-property beg (point) 'invisible 't)
-    (setq inhibit-read-only nil)
+    (let ((overlay (make-overlay beg (point))))
+      (overlay-put overlay 'invisible 't))
     't))
-
 
 (defun todotxt-line-empty-p ()
   "Returns whether or not the current line is empty"
@@ -147,7 +141,6 @@
     (let ((b (point)))
       (end-of-line)
       (equal (point) b))))
-
 
 (defun todotxt-filter-out (predicate)
   "Hides lines for which the provided predicate returns 't"
@@ -268,13 +261,7 @@
 
 (defun todotxt-unhide-all ()
   (interactive)
-  (goto-char (point-min))
-  (let ((beg (point)))
-    (goto-char (point-max))
-    (setq inhibit-read-only 't)
-    (remove-text-properties beg (point) '(intangible nil invisible nil))
-    (setq inhibit-read-only nil))
-  (goto-char (point-min)))
+  (remove-overlays))
 
 (defun todotxt-filter-for (arg)
   (interactive "p")
