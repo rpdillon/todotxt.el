@@ -52,6 +52,8 @@
 ;;  - Edit the current item with 'e'
 ;;  - Show only incomplete items with 'i'
 ;;  - Filter for any keyword or tag with '/'
+;;
+;; See 'readme.org' for more information.
 
 ;; Variables that are available for customization
 (defcustom todotxt-file (expand-file-name "~/todo.txt")
@@ -64,6 +66,7 @@
 (setq projects-regexp "\+[^[:space:]]*")
 (setq contexts-regexp "\@[^[:space:]]*")
 (setq complete-regexp "^x .*?$")
+(setq priority-regexp "^\([A-Z]\) .*?$")
 
 ;; Font Lock and Faces
 (defface todotxt-complete-face '(
@@ -123,7 +126,7 @@
   (todotxt-current-line-re-match complete-regexp))
 
 (defun todotxt-has-priority-p ()
-  (todotxt-current-line-re-match "^\([A-Z]\) .*?$"))
+  (todotxt-current-line-re-match priority-regexp))
 
 (defun todotxt-hide-line ()
   "Hides the current line, returns 't"
@@ -205,18 +208,21 @@
 (defun todotxt-prioritize ()
   (interactive)
   (let ((priority (read-from-minibuffer "Priority: ")))
-    (save-excursion
-      (setq inhibit-read-only 't)
-      (if (todotxt-has-priority-p)
-          (progn
-            (beginning-of-line)
-            (delete-char 4)))
-      (if (not (equal priority ""))
-          (progn
-            (beginning-of-line)
-            (insert (concat "(" priority ") "))
-            (save-buffer)
-            (setq inhibit-read-only nil))))))
+    (if (or (and (string-match "[A-Z]" priority) (equal (length priority) 1))
+            (equal priority ""))
+      (save-excursion
+        (setq inhibit-read-only 't)
+        (if (todotxt-has-priority-p)
+            (progn
+              (beginning-of-line)
+              (delete-char 4)))
+        (if (not (equal priority ""))
+            (progn
+              (beginning-of-line)
+              (insert (concat "(" (upcase priority) ") "))
+              (setq inhibit-read-only nil)))
+        (save-buffer))
+      (error "%s is not a valid priority.  Try a letter between A and Z." priority))))
 
 (defun todotxt-edit-item ()
   (interactive)

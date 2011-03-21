@@ -116,12 +116,6 @@
    when you need it and dismissed just as quickly.  You can do so by
    pressing =q=.
 * Limitations
-  - There is no checking to make sure you use a priority between A and
-    Z.  If you choose some other priority, like "banana" todotxt.el
-    will insert it, but it will not be compatible with other Todo.txt
-    tools.  Further, if you try to change it using the priority
-    feature again, it won't be recognized as a priority.  The
-    workaround is to edit manually using =e=.
   - There's no indication that the list is filtered.  If you're unsure
     of the filter state, press =l= to make sure you're really seeing
     all the items.
