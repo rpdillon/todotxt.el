@@ -62,11 +62,14 @@
        :require 'todotxt
        :group 'todotxt)
 
-(setq tags-regexp "\[+|@][^[:space:]]*") ; Used to find keywords for completion
-(setq projects-regexp "\+[^[:space:]]*")
-(setq contexts-regexp "\@[^[:space:]]*")
+(setq tags-regexp "[+|@][^[:space:]]*") ; Used to find keywords for completion
+(setq projects-regexp "+[^[:space:]]*")
+(setq contexts-regexp "@[^[:space:]]*")
 (setq complete-regexp "^x .*?$")
-(setq priority-regexp "^\([A-Z]\) .*?$")
+(setq priority-regexp "^(\\([A-Z]\\)) .*?$")
+(setq priority-a-regexp "^\\((A)\\) .*?$")
+(setq priority-b-regexp "^\\((B)\\) .*?$")
+(setq priority-c-regexp "^\\((C)\\) .*?$")
 
 ;; Font Lock and Faces
 (defface todotxt-complete-face '(
@@ -77,10 +80,43 @@
 (defvar todotxt-complete-face 'todotxt-complete-face
   "Todotxt mode face used for completed task.")
 
+(defface todotxt-priority-a-face '(
+  (((class color) (background dark)) (:foreground "red"))
+  (((class color) (background light)) (:foreground "red"))
+  (t (:bold t)))
+  "Todotxt mode face used for tasks with a priority of A."
+  :group 'todotxt-highlighting-faces)
+
+(defvar todotxt-priority-a-face 'todotxt-priority-a-face
+  "Todotxt mode face used for tasks with a priority of A.")
+
+(defface todotxt-priority-b-face '(
+  (((class color) (background dark)) (:foreground "orange"))
+  (((class color) (background light)) (:foreground "dark orange"))
+  (t (:bold t)))
+  "Todotxt mode face used for tasks with a priority of B."
+  :group 'todotxt-highlighting-faces)
+
+(defvar todotxt-priority-b-face 'todotxt-priority-b-face
+  "Todotxt mode face used for tasks with a priority of B.")
+
+(defface todotxt-priority-c-face '(
+  (((class color) (background dark)) (:foreground "yellow"))
+  (((class color) (background light)) (:foreground "gold"))
+  (t (:bold t)))
+  "Todotxt mode face used for tasks with a priority of C."
+  :group 'todotxt-highlighting-faces)
+
+(defvar todotxt-priority-c-face 'todotxt-priority-c-face
+  "Todotxt mode face used for tasks with a priority of C.")
+
 (setq todotxt-highlight-regexps
-      `((,projects-regexp 0 font-lock-variable-name-face t)
-        (,contexts-regexp 0 font-lock-keyword-face t)
-        (,complete-regexp 0 todotxt-complete-face t)))
+      `((,projects-regexp   0 font-lock-variable-name-face t)
+        (,contexts-regexp   0 font-lock-keyword-face t)
+        (,complete-regexp   0 todotxt-complete-face t)
+        (,priority-a-regexp 1 todotxt-priority-a-face t)
+        (,priority-b-regexp 1 todotxt-priority-b-face t)
+        (,priority-c-regexp 1 todotxt-priority-c-face t)))
 
 ;; Setup a major mode for todotxt
 (define-derived-mode todotxt-mode text-mode "todotxt" "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
@@ -125,8 +161,13 @@
   "Returns whether or not the current line is 'complete'. Used as part of a redefined filter for showing incomplete items only"
   (todotxt-current-line-re-match complete-regexp))
 
-(defun todotxt-has-priority-p ()
-  (todotxt-current-line-re-match priority-regexp))
+(defun todotxt-get-priority ()
+  "If the current item has a priority, return it as a string.  Otherwise, return nil."
+  (let* ((line (todotxt-get-current-line-as-string))
+         (idx (string-match priority-regexp line)))
+    (if idx
+        (match-string-no-properties 1 line)
+      nil)))
 
 (defun todotxt-hide-line ()
   "Hides the current line, returns 't"
@@ -138,7 +179,7 @@
     't))
 
 (defun todotxt-line-empty-p ()
-  "Returns whether or not the current line is empty"
+  "Returns whether or not the current line is empty."
   (save-excursion
     (beginning-of-line)
     (let ((b (point)))
@@ -179,15 +220,17 @@
 (defun todotxt ()
   "Open the todo.txt buffer.  If one already exists, bring it to the front and focus it.  Otherwise, create one and load the data from 'todotxt-file'."
   (interactive)
-  (let ((buf (find-file-noselect todotxt-file)))
-    (if (equal (get-buffer-window buf) nil)
+  (let* ((buf (find-file-noselect todotxt-file))
+         (win (get-buffer-window buf)))
+    (if (equal win nil)
         (progn
           (let* ((height (nth 3 (window-edges)))
             (nheight (- height (/ height 3)))
             (win (split-window (selected-window) nheight)))
           (select-window win)
           (switch-to-buffer buf)
-          (todotxt-mode))))
+          (todotxt-mode)))
+      (select-window win))
     (goto-char (point-min))))
 
 (defun todotxt-show-incomplete ()
@@ -212,7 +255,7 @@
             (equal priority ""))
       (save-excursion
         (setq inhibit-read-only 't)
-        (if (todotxt-has-priority-p)
+        (if (todotxt-get-priority)
             (progn
               (beginning-of-line)
               (delete-char 4)))
