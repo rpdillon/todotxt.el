@@ -129,7 +129,7 @@
 (define-key todotxt-mode-map (kbd "c") 'todotxt-complete-toggle) ; (C)omplete item
 (define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
 (define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
-(define-key todotxt-mode-map (kbd "r") 'todotxt-prioritize)      ; P(r)ioritize
+(define-key todotxt-mode-map (kbd "r") 'todotxt-add-priority)    ; Add p(r)iority
 (define-key todotxt-mode-map (kbd "P") 'todotxt-purge)           ; (P)urge completed items
 (define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t") 'todotxt-tag-item)        ; (T)ag item
@@ -216,7 +216,20 @@
       (end-of-line)
       (buffer-substring beg (point)))))
 
-;;; Externally visible functions
+(defun todotxt-prioritize-items ()
+  (let ((nextrecfun 'forward-line)
+        (endrecfun 'end-of-line)
+        (startkeyfun (lambda ()
+                       (let ((priority (todotxt-get-priority)))
+                         (if priority
+                             priority
+                           "a")))))
+    (goto-char (point-min))
+    (setq inhibit-read-only 't)
+    (sort-subr nil nextrecfun endrecfun startkeyfun)
+    (setq inhibit-read-only nil)))
+
+;;; externally visible functions
 (defun todotxt ()
   "Open the todo.txt buffer.  If one already exists, bring it to the front and focus it.  Otherwise, create one and load the data from 'todotxt-file'."
   (interactive)
@@ -229,7 +242,8 @@
             (win (split-window (selected-window) nheight)))
           (select-window win)
           (switch-to-buffer buf)
-          (todotxt-mode)))
+          (todotxt-mode)
+          (todotxt-prioritize-items)))
       (select-window win))
     (goto-char (point-min))))
 
@@ -245,10 +259,11 @@
     (setq inhibit-read-only 't)
     (goto-char (point-max))
     (insert item)
+    (todotxt-prioritize-items)
     (save-buffer)
     (setq inhibit-read-only nil)))
 
-(defun todotxt-prioritize ()
+(defun todotxt-add-priority ()
   (interactive)
   (let ((priority (read-from-minibuffer "Priority: ")))
     (if (or (and (string-match "[A-Z]" priority) (equal (length priority) 1))
@@ -264,6 +279,7 @@
               (beginning-of-line)
               (insert (concat "(" (upcase priority) ") "))
               (setq inhibit-read-only nil)))
+        (todotxt-prioritize-items)
         (save-buffer))
       (error "%s is not a valid priority.  Try a letter between A and Z." priority))))
 
@@ -275,6 +291,7 @@
       (setq inhibit-read-only 't)
       (kill-line)
       (insert new-text)
+      (todotxt-prioritize-items)
       (save-buffer)
       (setq inhibit-read-only nil))))
 
