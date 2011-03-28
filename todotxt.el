@@ -71,6 +71,8 @@
 (setq priority-b-regexp "^\\((B)\\) .*?$")
 (setq priority-c-regexp "^\\((C)\\) .*?$")
 
+(setq todotxt-active-filters '())
+
 ;; Font Lock and Faces
 (defface todotxt-complete-face '(
   (t (:strike-through t)))
@@ -121,6 +123,7 @@
 ;; Setup a major mode for todotxt
 (define-derived-mode todotxt-mode text-mode "todotxt" "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
   (setq font-lock-defaults '(todotxt-highlight-regexps))
+  (setq goal-column 0)
   (setq buffer-read-only t))
 
 ;; Setup key map
@@ -130,13 +133,15 @@
 (define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
 (define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
 (define-key todotxt-mode-map (kbd "r") 'todotxt-add-priority)    ; Add p(r)iority
-(define-key todotxt-mode-map (kbd "P") 'todotxt-purge)           ; (P)urge completed items
+(define-key todotxt-mode-map (kbd "A") 'todotxt-archive)         ; (A)rchive completed items
 (define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t") 'todotxt-tag-item)        ; (T)ag item
 (define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ; 
 (define-key todotxt-mode-map (kbd "s") 'save-buffer)             ; (S)ave
 (define-key todotxt-mode-map (kbd "n") 'next-line)               ; (N)ext
 (define-key todotxt-mode-map (kbd "p") 'previous-line)           ; (P)revious
+(define-key todotxt-mode-map (kbd "j") 'next-line)               ; Vi Binding
+(define-key todotxt-mode-map (kbd "k") 'previous-line)           ; Vi Binding
 
 ;; Utility functions
 (defun todotxt-current-line-re-match (re)
@@ -186,14 +191,24 @@
       (end-of-line)
       (equal (point) b))))
 
-(defun todotxt-filter-out (predicate)
-  "Hides lines for which the provided predicate returns 't"
+(defun todotxt-filter (predicate)
+  "Hides lines for which the provided predicate returns 't.  This is our main filtering function that all others call to do their work."
   (save-excursion
     (goto-char (point-min))
     (while (progn
              (if (and (not (todotxt-line-empty-p)) (funcall predicate))
                  (todotxt-hide-line)
-               (equal (forward-line) 0))))))
+               (equal (forward-line) 0)))))
+  (if (not (member predicate todotxt-active-filters))
+      (setq todotxt-active-filters (cons predicate todotxt-active-filters))))
+
+(defun todotxt-apply-active-filters ()
+  (defun inner-loop (filters)
+    (if (not (equal filters nil))
+        (progn
+          (todotxt-filter (car filters))
+          (inner-loop (cdr filters)))))
+  (inner-loop todotxt-active-filters))
 
 (defun todotxt-get-tag-completion-list-from-string (string)
   "Search the buffer for tags (strings beginning with either '@' or '+') and return a list of them."
@@ -217,6 +232,8 @@
       (buffer-substring beg (point)))))
 
 (defun todotxt-prioritize-items ()
+  "Performs a specialized sort of the lines in the buffer, placing prioritized items in priority order at the top leaving the other items' order unaltered."
+  (remove-overlays)
   (let ((nextrecfun 'forward-line)
         (endrecfun 'end-of-line)
         (startkeyfun (lambda ()
@@ -227,6 +244,7 @@
     (goto-char (point-min))
     (setq inhibit-read-only 't)
     (sort-subr nil nextrecfun endrecfun startkeyfun)
+    (todotxt-apply-active-filters)
     (setq inhibit-read-only nil)))
 
 ;;; externally visible functions
@@ -250,7 +268,7 @@
 (defun todotxt-show-incomplete ()
   "Filter out complete items from the todo list."
   (interactive)
-  (todotxt-filter-out 'todotxt-complete-p))
+  (todotxt-filter 'todotxt-complete-p))
 
 (defun todotxt-add-item (item)
   "Prompt for an item to add to the todo list and append it to the file, saving afterwards."
@@ -258,7 +276,7 @@
   (save-excursion
     (setq inhibit-read-only 't)
     (goto-char (point-max))
-    (insert item)
+    (insert (concat item "\n"))
     (todotxt-prioritize-items)
     (save-buffer)
     (setq inhibit-read-only nil)))
@@ -306,18 +324,23 @@
     (save-buffer)
     (setq inhibit-read-only nil)))
 
-(defun todotxt-purge ()
+(defun todotxt-archive ()
   (interactive)
   (save-excursion
     (goto-char (point-min))
     (setq inhibit-read-only 't)    
     (while (progn
              (if (and (not (todotxt-line-empty-p)) (todotxt-complete-p))
-                 ;; Todo: Consider a push to complete.txt?
                  (progn
-                   (kill-line 1)
+                   (beginning-of-line)
+                   (let ((beg (point)))
+                     (forward-line)
+                     (append-to-file beg (point) (concat (file-name-directory todotxt-file) "/done.txt")))
+                     (previous-line)
+                     (kill-line 1)
                    't)
                (equal (forward-line) 0))))
+    (save-buffer)
     (setq inhibit-read-only nil)))
 
 (defun todotxt-bury ()
@@ -327,7 +350,8 @@
 
 (defun todotxt-unhide-all ()
   (interactive)
-  (remove-overlays))
+  (remove-overlays)
+  (setq todotxt-active-filters '()))
 
 (defun todotxt-filter-for (arg)
   (interactive "p")
@@ -336,7 +360,21 @@
       (if (equal arg 4)
           (todotxt-unhide-all))
       (goto-char (point-min))
-      (todotxt-filter-out (lambda () (not (todotxt-current-line-match keyword)))))))
+      ; The contortions are to work around the lack of closures
+      (todotxt-filter (eval `(lambda () (not (todotxt-current-line-match ,keyword))))))))
+
+; Should probably be combined with filter-for
+; TODO: evaluate utility of filter-for unhide-all functionality as a
+; possible place for this to go
+(defun todotxt-filter-out (arg)
+  (interactive "p")
+  (let* ((keyword (completing-read "Tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
+    (save-excursion
+      (if (equal arg 4)
+          (todotxt-unhide-all))
+      (goto-char (point-min))
+      ; The contortions are to work around the lack of closures
+      (todotxt-filter (eval `(lambda () (todotxt-current-line-match ,keyword)))))))
 
 (defun todotxt-complete-toggle ()
   (interactive)
@@ -349,6 +387,7 @@
       (progn
         (beginning-of-line)
         (insert "x ")))
+    (todotxt-prioritize-items)
     (setq inhibit-read-only nil)
     (save-buffer)))
   
