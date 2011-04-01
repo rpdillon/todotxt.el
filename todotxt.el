@@ -121,7 +121,8 @@
         (,priority-c-regexp 1 todotxt-priority-c-face t)))
 
 ;; Setup a major mode for todotxt
-(define-derived-mode todotxt-mode text-mode "todotxt" "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
+(define-derived-mode todotxt-mode text-mode "todotxt" 
+  "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
   (setq font-lock-defaults '(todotxt-highlight-regexps))
   (setq goal-column 0)
   (setq buffer-read-only t))
@@ -145,7 +146,8 @@
 
 ;; Utility functions
 (defun todotxt-current-line-re-match (re)
-  "Test whether or not the current line contains text that matches the provided regular expression"
+  "Test whether or not the current line contains text that
+matches the provided regular expression"
   (let ((line-number (line-number-at-pos)))
     (save-excursion
       (beginning-of-line)
@@ -154,7 +156,8 @@
         nil))))
 
 (defun todotxt-current-line-match (s)
-  "Test whether or not the current line contains text that matches the provided string"
+  "Test whether or not the current line contains text that
+matches the provided string"
   (let ((line-number (line-number-at-pos)))
     (save-excursion
       (beginning-of-line)
@@ -163,11 +166,13 @@
         nil))))
 
 (defun todotxt-complete-p ()
-  "Returns whether or not the current line is 'complete'. Used as part of a redefined filter for showing incomplete items only"
+  "Returns whether or not the current line is 'complete'. Used as
+part of a redefined filter for showing incomplete items only"
   (todotxt-current-line-re-match complete-regexp))
 
 (defun todotxt-get-priority ()
-  "If the current item has a priority, return it as a string.  Otherwise, return nil."
+  "If the current item has a priority, return it as a string.
+Otherwise, return nil."
   (let* ((line (todotxt-get-current-line-as-string))
          (idx (string-match priority-regexp line)))
     (if idx
@@ -191,14 +196,36 @@
       (end-of-line)
       (equal (point) b))))
 
+(defun todotxt-jump-to-item (item)
+  "Given the full text of an item, moves the point to the
+beginning of the line containing that item."
+  (todotxt-find-first-visible-char)
+  (search-forward item)
+  (beginning-of-line)
+  (if (not (equal (overlays-at (point)) nil))
+      (todotxt-find-first-visible-char)))
+
+(defun todotxt-find-first-visible-char ()
+  "Move the point to the next character in the buffer that does
+not have an overlay applied to it.  This function exists to
+address an odd bug in which the point can exist at (point-min)
+even though it is invisible.  This usually needs to be called
+after items are filtered in some way, but perhaps in other case
+as well."
+  (goto-char (point-min))
+  (while (not (equal (overlays-at (point)) nil))
+    (forward-char)))
+
 (defun todotxt-filter (predicate)
-  "Hides lines for which the provided predicate returns 't.  This is our main filtering function that all others call to do their work."
-  (save-excursion
-    (goto-char (point-min))
-    (while (progn
-             (if (and (not (todotxt-line-empty-p)) (funcall predicate))
-                 (todotxt-hide-line)
-               (equal (forward-line) 0)))))
+  "Hides lines for which the provided predicate returns 't.  This
+is our main filtering function that all others call to do their
+work."
+  (goto-char (point-min))
+  (while (progn
+           (if (and (not (todotxt-line-empty-p)) (funcall predicate))
+               (todotxt-hide-line)
+             (equal (forward-line) 0))))
+  (todotxt-find-first-visible-char)
   (if (not (member predicate todotxt-active-filters))
       (setq todotxt-active-filters (cons predicate todotxt-active-filters))))
 
@@ -208,10 +235,12 @@
         (progn
           (todotxt-filter (car filters))
           (inner-loop (cdr filters)))))
-  (inner-loop todotxt-active-filters))
+  (inner-loop todotxt-active-filters)
+  (todotxt-find-first-visible-char))
 
 (defun todotxt-get-tag-completion-list-from-string (string)
-  "Search the buffer for tags (strings beginning with either '@' or '+') and return a list of them."
+  "Search the buffer for tags (strings beginning with either '@'
+or '+') and return a list of them."
   (save-excursion
     (let ((completion-list '())
           (start-index 0))
@@ -224,7 +253,8 @@
       completion-list)))
 
 (defun todotxt-get-current-line-as-string ()
-  "Return the text of the line in which the point currently resides."
+  "Return the text of the line in which the point currently
+resides."
   (save-excursion
     (beginning-of-line)
     (let ((beg (point)))
@@ -232,7 +262,9 @@
       (buffer-substring beg (point)))))
 
 (defun todotxt-prioritize-items ()
-  "Performs a specialized sort of the lines in the buffer, placing prioritized items in priority order at the top leaving the other items' order unaltered."
+  "Performs a specialized sort of the lines in the buffer,
+placing prioritized items in priority order at the top leaving
+the other items' order unaltered."
   (remove-overlays)
   (let ((nextrecfun 'forward-line)
         (endrecfun 'end-of-line)
@@ -241,15 +273,19 @@
                          (if priority
                              priority
                            "a")))))
-    (goto-char (point-min))
-    (setq inhibit-read-only 't)
-    (sort-subr nil nextrecfun endrecfun startkeyfun)
-    (todotxt-apply-active-filters)
+    (let ((origin (point)))
+      (goto-char (point-min))
+      (setq inhibit-read-only 't)
+      (sort-subr nil nextrecfun endrecfun startkeyfun)
+      (todotxt-apply-active-filters)
+      (goto-char origin))
     (setq inhibit-read-only nil)))
 
 ;;; externally visible functions
 (defun todotxt ()
-  "Open the todo.txt buffer.  If one already exists, bring it to the front and focus it.  Otherwise, create one and load the data from 'todotxt-file'."
+  "Open the todo.txt buffer.  If one already exists, bring it to
+the front and focus it.  Otherwise, create one and load the data
+from 'todotxt-file'."
   (interactive)
   (let* ((buf (find-file-noselect todotxt-file))
          (win (get-buffer-window buf)))
@@ -263,7 +299,7 @@
           (todotxt-mode)
           (todotxt-prioritize-items)))
       (select-window win))
-    (goto-char (point-min))))
+    (todotxt-find-first-visible-char)))
 
 (defun todotxt-show-incomplete ()
   "Filter out complete items from the todo list."
@@ -271,17 +307,24 @@
   (todotxt-filter 'todotxt-complete-p))
 
 (defun todotxt-add-item (item)
-  "Prompt for an item to add to the todo list and append it to the file, saving afterwards."
+  "Prompt for an item to add to the todo list and append it to
+the file, saving afterwards."
   (interactive "sItem to add: ")
-  (save-excursion
-    (setq inhibit-read-only 't)
-    (goto-char (point-max))
-    (insert (concat item "\n"))
-    (todotxt-prioritize-items)
-    (save-buffer)
-    (setq inhibit-read-only nil)))
+  (setq inhibit-read-only 't)
+  (goto-char (point-max))
+  (insert (concat item "\n"))
+  (todotxt-prioritize-items)
+  (save-buffer)
+  (setq inhibit-read-only nil)
+  (todotxt-jump-to-item item))
 
 (defun todotxt-add-priority ()
+  "Prompts for a priority from A-Z to be added to the current
+item.  If the item already has a priority, it will be replaced.
+If the supplied priority is lower case, it will be made upper
+case.  If the input is the empty string, no priority will be
+added, and if the item already has a priority, it will be
+removed."
   (interactive)
   (let ((priority (read-from-minibuffer "Priority: ")))
     (if (or (and (string-match "[A-Z]" priority) (equal (length priority) 1))
@@ -327,6 +370,7 @@
 (defun todotxt-archive ()
   (interactive)
   (save-excursion
+    (remove-overlays)
     (goto-char (point-min))
     (setq inhibit-read-only 't)    
     (while (progn
@@ -341,6 +385,7 @@
                    't)
                (equal (forward-line) 0))))
     (save-buffer)
+    (todotxt-apply-active-filters)
     (setq inhibit-read-only nil)))
 
 (defun todotxt-bury ()
@@ -356,12 +401,11 @@
 (defun todotxt-filter-for (arg)
   (interactive "p")
   (let* ((keyword (completing-read "Tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
-    (save-excursion
-      (if (equal arg 4)
-          (todotxt-unhide-all))
-      (goto-char (point-min))
-      ; The contortions are to work around the lack of closures
-      (todotxt-filter (eval `(lambda () (not (todotxt-current-line-match ,keyword))))))))
+    (if (equal arg 4)
+        (todotxt-unhide-all))
+    (goto-char (point-min))
+    ; The contortions are to work around the lack of closures
+    (todotxt-filter (eval `(lambda () (not (todotxt-current-line-match ,keyword)))))))
 
 ; Should probably be combined with filter-for
 ; TODO: evaluate utility of filter-for unhide-all functionality as a
@@ -378,17 +422,17 @@
 
 (defun todotxt-complete-toggle ()
   (interactive)
-  (save-excursion
-    (setq inhibit-read-only 't)
-    (if (todotxt-complete-p)
-        (progn
-          (beginning-of-line)
-          (delete-char 2))
+  (setq inhibit-read-only 't)
+  (if (todotxt-complete-p)
       (progn
         (beginning-of-line)
-        (insert "x ")))
-    (todotxt-prioritize-items)
-    (setq inhibit-read-only nil)
-    (save-buffer)))
+        (delete-char 2))
+    (progn
+      (beginning-of-line)
+      (insert "x ")
+      (beginning-of-line)))
+  (todotxt-prioritize-items)
+  (setq inhibit-read-only nil)
+  (save-buffer))
   
 (provide 'todotxt)

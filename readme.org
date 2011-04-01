@@ -34,17 +34,18 @@
   actions associated with tasks including:
 
   - Listing all tasks ('l')
-  - Navigation up and down ('p' and 'n')
+  - Navigation up and down ('p' or 'k' for up and 'n' or 'j' for down)
   - Showing only incomplete tasks ('i')
   - Adding a task ('a')
   - Completing a task ('c')
   - Tagging a task ('t') with a project and/or context
   - Setting the priority on a task ('r')
-  - Purging (deleting) completed tasks ('P')
+  - Archiving completed tasks in =done.txt= ('A')
   - Freeform editing of a task ('e')
   - Progressive filtering of the task list ('/')
-  - Saving ('s') (only needed for destructive actions -- everything
-    else is saved automatically)
+  - Saving ('s') (usually not needed; most actions are saved
+    automatically)
+
 
 * Installation
   Installation is similar to that which you would find with any Emacs package.
@@ -78,10 +79,9 @@
 
    Filtering is progressive by default, meaning that each time you
    filter, it filters the visible list.  To disable progressive
-   filtering in a particular instance, pass the universal argument to
-   the filter command, i.e. instead of just pressing =/=, press =C-u
-   /=, which will filter the entire list, not just the visible
-   entries.
+   filtering when invoking, pass the universal argument to the filter
+   command, i.e. instead of just pressing =/=, press =C-u /=, which
+   will filter the entire list, not just the visible entries.
 ** Tagging
    You can add a tag (again, either a project or a context) with =t=.
    This will then prompt you for a tag, which it will append to
@@ -92,8 +92,7 @@
    =r=.  If the item already has a priority, it will be overwritten.
    If the item has a priority and you simply press =enter= without
    specifying a new one, the current priority will be deleted.
-   Priorities should be a single upper-case character in the range
-   A-Z.
+   Priorities should be a single character in the range A-Z.
 ** Editing
    Sometimes the built in features aren't enough, and you just want to
    do some freeform edits on an item.  This is easy to do with =e=.
@@ -101,16 +100,8 @@
    will be saved.
 ** Completing
    A task's completion state is toggled with =c=.
-** Purging
-   Completed tasks can be permanently deleted with =P=.  Currently,
-   this is the only destructive action you can take.  I try and
-   protect against mistakes in two ways:
-   - Destructive actions will be initiated using a capital letter to
-     help prevent mistakes
-   - Destructive actions do not automatically save the file.  If you
-     want to save the file after you have deleted some of the tasks,
-     you can do so with =s=.  Other actions automatically save the
-     file for you.
+** Archiving
+   Completed tasks can be moved to the file =done.txt= with =A=.
 ** Quitting
    Like many other modes in Emacs, todotxt is meant to be brought up
    when you need it and dismissed just as quickly.  You can do so by
