@@ -6,10 +6,10 @@
 ;; Author: Rick Dillon <rpdillon@etherplex.org>
 ;; Copyright (C) 2011, Rick Dillon, all rights reserved.
 ;; Created: 14 March 2011
-;; Version: 0.1
+;; Version: 0.2
 ;; URL: https://github.com/rpdillon/todotxt.el
 ;; Keywords: todo.txt, todotxt, todotxt.el
-;; Compatibility: GNU Emacs 22 ~ 23
+;; Compatibility: GNU Emacs 22 ~ 24
 ;;
 
 ;; This file is NOT part of GNU Emacs
@@ -45,7 +45,7 @@
 ;;  - Bind 'todotxt' to some accelerator like C-x t: (global-set-key (kbd "C-x t") 'todotxt)
 ;;
 ;; Usage:
-;;  - Navigate up and down with 'n' and 'p'
+;;  - Navigate up and down with 'p' and 'n' (or 'k' and 'j')
 ;;  - Toggle completion of an item with 'c'
 ;;  - Add a new item with 'a'
 ;;  - Tag the current item with 't' (use tab completion as necessary)
@@ -54,13 +54,33 @@
 ;;  - Filter for any keyword or tag with '/'
 ;;
 ;; See 'readme.org' for more information.
+;;
+;; The vast majority of the behavior of this program is governed by
+;; the todo.txt formatting rules.  The can be found on the GitHub page
+;; for todo.txt-cli:
+;;
+;; https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format
 
 ;; Variables that are available for customization
 (defcustom todotxt-file (expand-file-name "~/todo.txt")
-       "The location of your todo.txt file."
-       :type 'string
-       :require 'todotxt
-       :group 'todotxt)
+  "The location of your todo.txt file."
+  :type 'string
+  :require 'todotxt
+  :group 'todotxt)
+
+(defcustom todotxt-use-creation-dates  't
+  "If non-nil, include creation dates for newly added items.
+Defaults to 't."
+  :type 'boolean
+  :require 'todotxt
+  :group 'todotxt)
+
+(defcustom todotxt-save-after-change  't
+  "If non-nil, the file is saved after any operation is
+performed.  Defaults to 't."
+  :type 'boolean
+  :require 'todotxt
+  :group 'todotxt)
 
 (setq tags-regexp "[+|@][^[:space:]]*") ; Used to find keywords for completion
 (setq projects-regexp "+[^[:space:]]*")
@@ -131,6 +151,7 @@
 (define-key todotxt-mode-map (kbd "l") 'todotxt-unhide-all)      ; (L)ist
 (define-key todotxt-mode-map (kbd "i") 'todotxt-show-incomplete) ; list (I)ncomplete
 (define-key todotxt-mode-map (kbd "c") 'todotxt-complete-toggle) ; (C)omplete item
+(define-key todotxt-mode-map (kbd "N") 'todotxt-nuke-item)       ; (N)uke item
 (define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
 (define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
 (define-key todotxt-mode-map (kbd "r") 'todotxt-add-priority)    ; Add p(r)iority
@@ -281,6 +302,11 @@ the other items' order unaltered."
       (goto-char origin))
     (setq inhibit-read-only nil)))
 
+(defun todotxt-get-formatted-date ()
+  "Returns a string with the date formatted in standard todo.txt
+format."
+  (format-time-string "%Y-%m-%d"))
+
 ;;; externally visible functions
 (defun todotxt ()
   "Open the todo.txt buffer.  If one already exists, bring it to
@@ -306,15 +332,27 @@ from 'todotxt-file'."
   (interactive)
   (todotxt-filter 'todotxt-complete-p))
 
+(defun todotxt-nuke-item ()
+  "Deletes the current item without passing Go or collecting
+$200"
+  (interactive)
+  (setq inhibit-read-only 't)
+  (beginning-of-line)
+  (kill-whole-line)
+  (setq inhibit-read-only nil))
+
 (defun todotxt-add-item (item)
   "Prompt for an item to add to the todo list and append it to
 the file, saving afterwards."
   (interactive "sItem to add: ")
   (setq inhibit-read-only 't)
   (goto-char (point-max))
-  (insert (concat item "\n"))
+  (insert (concat
+           (if todotxt-use-creation-dates
+               (concat (todotxt-get-formatted-date) " "))
+           item "\n"))
   (todotxt-prioritize-items)
-  (save-buffer)
+  (if todotxt-save-after-change (save-buffer))
   (setq inhibit-read-only nil)
   (todotxt-jump-to-item item))
 
@@ -341,7 +379,7 @@ removed."
               (insert (concat "(" (upcase priority) ") "))
               (setq inhibit-read-only nil)))
         (todotxt-prioritize-items)
-        (save-buffer))
+        (if todotxt-save-after-change (save-buffer)))
       (error "%s is not a valid priority.  Try a letter between A and Z." priority))))
 
 (defun todotxt-edit-item ()
@@ -353,7 +391,7 @@ removed."
       (kill-line)
       (insert new-text)
       (todotxt-prioritize-items)
-      (save-buffer)
+      (if todotxt-save-after-change (save-buffer))
       (setq inhibit-read-only nil))))
 
 (defun todotxt-tag-item ()
@@ -364,7 +402,7 @@ removed."
     (setq inhibit-read-only 't)
     (kill-line)
     (insert new-text)
-    (save-buffer)
+    (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
 
 (defun todotxt-archive ()
@@ -384,7 +422,7 @@ removed."
                      (kill-line 1)
                    't)
                (equal (forward-line) 0))))
-    (save-buffer)
+    (if todotxt-save-after-change (save-buffer))
     (todotxt-apply-active-filters)
     (setq inhibit-read-only nil)))
 
@@ -399,6 +437,9 @@ removed."
   (setq todotxt-active-filters '()))
 
 (defun todotxt-filter-for (arg)
+  "Filters the todo list for a specific tag or keyword.  Projects
+and contexts should have their preceding '+' and '@' symbols,
+respectively, if tab-completion is to be used."
   (interactive "p")
   (let* ((keyword (completing-read "Tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
     (if (equal arg 4)
@@ -421,18 +462,35 @@ removed."
       (todotxt-filter (eval `(lambda () (todotxt-current-line-match ,keyword)))))))
 
 (defun todotxt-complete-toggle ()
+  "Toggles the complete state for the item under the point In
+accordance with the spec, this also adds a completion date to
+completed items, and removes it if the item is being change to a
+'not completed' state."
   (interactive)
   (setq inhibit-read-only 't)
   (if (todotxt-complete-p)
       (progn
         (beginning-of-line)
-        (delete-char 2))
+        (delete-char 2)
+        (save-excursion
+          (if (re-search-forward
+               "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
+               (+ (point) 11))
+              (progn
+                (beginning-of-line)
+                (delete-char 11)))))
     (progn
       (beginning-of-line)
-      (insert "x ")
+      ; This isn't in the spec, but the CLI version removes priorities
+      ; upon completion.  It's problematic, because there's no good
+      ; way to put them back if you toggle completion back to "not
+      ; done".
+      (if (todotxt-get-priority)
+              (delete-char 4))
+      (insert (concat "x " (todotxt-get-formatted-date) " "))
       (beginning-of-line)))
   (todotxt-prioritize-items)
   (setq inhibit-read-only nil)
-  (save-buffer))
-  
+  (if todotxt-save-after-change (save-buffer)))
+
 (provide 'todotxt)
