@@ -4,7 +4,7 @@
 
 ;; Description: A major mode for editing todo.txt files
 ;; Author: Rick Dillon <rpdillon@etherplex.org>
-;; Copyright (C) 2011, Rick Dillon, all rights reserved.
+;; Copyright (C) 2011, 2012 Rick Dillon, all rights reserved.
 ;; Created: 14 March 2011
 ;; Version: 0.2
 ;; URL: https://github.com/rpdillon/todotxt.el
@@ -141,10 +141,11 @@ performed.  Defaults to 't."
         (,priority-c-regexp 1 todotxt-priority-c-face t)))
 
 ;; Setup a major mode for todotxt
-(define-derived-mode todotxt-mode text-mode "todotxt" 
+(define-derived-mode todotxt-mode text-mode "todotxt"
   "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
   (setq font-lock-defaults '(todotxt-highlight-regexps))
   (setq goal-column 0)
+  (auto-revert-mode)
   (setq buffer-read-only t))
 
 ;; Setup key map
@@ -158,7 +159,8 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "A") 'todotxt-archive)         ; (A)rchive completed items
 (define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t") 'todotxt-tag-item)        ; (T)ag item
-(define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ; 
+(define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ;
+(define-key todotxt-mode-map (kbd "g") 'todotxt-revert)          ; Revert the buffer
 (define-key todotxt-mode-map (kbd "s") 'save-buffer)             ; (S)ave
 (define-key todotxt-mode-map (kbd "n") 'next-line)               ; (N)ext
 (define-key todotxt-mode-map (kbd "p") 'previous-line)           ; (P)revious
@@ -327,6 +329,11 @@ from 'todotxt-file'."
       (select-window win))
     (todotxt-find-first-visible-char)))
 
+(defun todotxt-revert ()
+  "Revert the contents of the todotxt buffer."
+  (interactive)
+  (revert-buffer nil 't 't))
+
 (defun todotxt-show-incomplete ()
   "Filter out complete items from the todo list."
   (interactive)
@@ -410,7 +417,7 @@ removed."
   (save-excursion
     (remove-overlays)
     (goto-char (point-min))
-    (setq inhibit-read-only 't)    
+    (setq inhibit-read-only 't)
     (while (progn
              (if (and (not (todotxt-line-empty-p)) (todotxt-complete-p))
                  (progn

@@ -45,7 +45,7 @@
   - Progressive filtering of the task list ('/')
   - Saving ('s') (usually not needed; most actions are saved
     automatically)
-
+  - Reverting ('g') in case the buffer has been edited using an external tool
 
 * Installation
   Installation is similar to that which you would find with any Emacs package.
