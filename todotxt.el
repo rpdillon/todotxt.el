@@ -159,6 +159,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t") 'todotxt-tag-item)        ; (T)ag item
 (define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ; 
+(define-key todotxt-mode-map (kbd "\\") 'todotxt-filter-out)     ; 
 (define-key todotxt-mode-map (kbd "s") 'save-buffer)             ; (S)ave
 (define-key todotxt-mode-map (kbd "n") 'next-line)               ; (N)ext
 (define-key todotxt-mode-map (kbd "p") 'previous-line)           ; (P)revious
