@@ -1,4 +1,4 @@
-;; todotxt.el --- A major mode for editing todo.txt files
+;;; todotxt.el --- A major mode for editing todo.txt files
 
 ;; Filename: todotxt.el
 
