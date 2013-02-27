@@ -1,20 +1,21 @@
-;; todotxt.el -- A major mode for editing todo.txt files
+;; todotxt.el --- A major mode for editing todo.txt files
 
 ;; Filename: todotxt.el
 
 ;; Description: A major mode for editing todo.txt files
-;; Author: Rick Dillon <rpdillon@etherplex.org>
-;; Copyright (C) 2011, 2012 Rick Dillon, all rights reserved.
+
+;; Author: Rick Dillon <rpdillon@killring.org>
+;; Copyright (C) 2011-2013 Rick Dillon
+
 ;; Created: 14 March 2011
-;; Version: 0.2
+;; Version: 0.2.1
 ;; URL: https://github.com/rpdillon/todotxt.el
 ;; Keywords: todo.txt, todotxt, todotxt.el
 ;; Compatibility: GNU Emacs 22 ~ 24
 ;;
-
 ;; This file is NOT part of GNU Emacs
 
-;; License
+;; License:
 ;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -52,6 +53,7 @@
 ;;  - Edit the current item with 'e'
 ;;  - Show only incomplete items with 'i'
 ;;  - Filter for any keyword or tag with '/'
+;;  - Filter out any keyword or tag with '\'
 ;;
 ;; See 'readme.org' for more information.
 ;;
@@ -149,23 +151,24 @@ performed.  Defaults to 't."
   (setq buffer-read-only t))
 
 ;; Setup key map
-(define-key todotxt-mode-map (kbd "l") 'todotxt-unhide-all)      ; (L)ist
-(define-key todotxt-mode-map (kbd "i") 'todotxt-show-incomplete) ; list (I)ncomplete
-(define-key todotxt-mode-map (kbd "c") 'todotxt-complete-toggle) ; (C)omplete item
-(define-key todotxt-mode-map (kbd "N") 'todotxt-nuke-item)       ; (N)uke item
-(define-key todotxt-mode-map (kbd "a") 'todotxt-add-item)        ; (A)dd item
-(define-key todotxt-mode-map (kbd "q") 'todotxt-bury)            ; (Q)uit
-(define-key todotxt-mode-map (kbd "r") 'todotxt-add-priority)    ; Add p(r)iority
-(define-key todotxt-mode-map (kbd "A") 'todotxt-archive)         ; (A)rchive completed items
-(define-key todotxt-mode-map (kbd "e") 'todotxt-edit-item)       ; (E)dit item
-(define-key todotxt-mode-map (kbd "t") 'todotxt-tag-item)        ; (T)ag item
-(define-key todotxt-mode-map (kbd "/") 'todotxt-filter-for)      ;
-(define-key todotxt-mode-map (kbd "g") 'todotxt-revert)          ; Revert the buffer
-(define-key todotxt-mode-map (kbd "s") 'save-buffer)             ; (S)ave
-(define-key todotxt-mode-map (kbd "n") 'next-line)               ; (N)ext
-(define-key todotxt-mode-map (kbd "p") 'previous-line)           ; (P)revious
-(define-key todotxt-mode-map (kbd "j") 'next-line)               ; Vi Binding
-(define-key todotxt-mode-map (kbd "k") 'previous-line)           ; Vi Binding
+(define-key todotxt-mode-map (kbd "l")   'todotxt-unhide-all)      ; (L)ist
+(define-key todotxt-mode-map (kbd "i")   'todotxt-show-incomplete) ; list (I)ncomplete
+(define-key todotxt-mode-map (kbd "c")   'todotxt-complete-toggle) ; (C)omplete item
+(define-key todotxt-mode-map (kbd "N")   'todotxt-nuke-item)       ; (N)uke item
+(define-key todotxt-mode-map (kbd "a")   'todotxt-add-item)        ; (A)dd item
+(define-key todotxt-mode-map (kbd "q")   'todotxt-bury)            ; (Q)uit
+(define-key todotxt-mode-map (kbd "r")   'todotxt-add-priority)    ; Add p(r)iority
+(define-key todotxt-mode-map (kbd "A")   'todotxt-archive)         ; (A)rchive completed items
+(define-key todotxt-mode-map (kbd "e")   'todotxt-edit-item)       ; (E)dit item
+(define-key todotxt-mode-map (kbd "t")   'todotxt-tag-item)        ; (T)ag item
+(define-key todotxt-mode-map (kbd "/")   'todotxt-filter-for)      ;
+(define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-out)      ;
+(define-key todotxt-mode-map (kbd "g")   'todotxt-revert)          ; Revert the buffer
+(define-key todotxt-mode-map (kbd "s")   'save-buffer)             ; (S)ave
+(define-key todotxt-mode-map (kbd "n")   'next-line)               ; (N)ext
+(define-key todotxt-mode-map (kbd "p")   'previous-line)           ; (P)revious
+(define-key todotxt-mode-map (kbd "j")   'next-line)               ; Vi Binding
+(define-key todotxt-mode-map (kbd "k")   'previous-line)           ; Vi Binding
 
 ;; Utility functions
 (defun todotxt-current-line-re-match (re)
@@ -501,3 +504,5 @@ completed items, and removes it if the item is being change to a
   (if todotxt-save-after-change (save-buffer)))
 
 (provide 'todotxt)
+
+;;; todotxt.el ends here
