@@ -8,7 +8,7 @@
 ;; Copyright (C) 2011-2013 Rick Dillon
 
 ;; Created: 14 March 2011
-;; Version: 0.2.1
+;; Version: 0.2.2
 ;; URL: https://github.com/rpdillon/todotxt.el
 ;; Keywords: todo.txt, todotxt, todotxt.el
 ;; Compatibility: GNU Emacs 22 ~ 24
@@ -63,6 +63,7 @@
 ;;
 ;; https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format
 
+(defgroup todotxt nil "Todotxt is an Emacs utility to manage todo.txt files.")
 ;; Variables that are available for customization
 (defcustom todotxt-file (expand-file-name "~/todo.txt")
   "The location of your todo.txt file."
@@ -162,7 +163,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "e")   'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t")   'todotxt-tag-item)        ; (T)ag item
 (define-key todotxt-mode-map (kbd "/")   'todotxt-filter-for)      ;
-(define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-for)      ;
+(define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-out)      ;
 (define-key todotxt-mode-map (kbd "g")   'todotxt-revert)          ; Revert the buffer
 (define-key todotxt-mode-map (kbd "s")   'save-buffer)             ; (S)ave
 (define-key todotxt-mode-map (kbd "n")   'next-line)               ; (N)ext
