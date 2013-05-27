@@ -8,7 +8,7 @@
 ;; Copyright (C) 2011-2013 Rick Dillon
 
 ;; Created: 14 March 2011
-;; Version: 0.2.2
+;; Version: 0.2.3
 ;; URL: https://github.com/rpdillon/todotxt.el
 ;; Keywords: todo.txt, todotxt, todotxt.el
 ;; Compatibility: GNU Emacs 22 ~ 24
@@ -349,7 +349,14 @@ $200"
   (interactive)
   (setq inhibit-read-only 't)
   (beginning-of-line)
-  (kill-whole-line)
+  ; So begins the dance to get the /real/ beginning of line
+  ; TODO: if this is needed elsewhere, pull it up into a function
+  (forward-char)
+  (backward-char)
+  (let ((beg (point)))
+    (end-of-line)
+    (forward-char)
+    (delete-region beg (point)))
   (setq inhibit-read-only nil))
 
 (defun todotxt-add-item (item)
@@ -473,7 +480,7 @@ respectively, if tab-completion is to be used."
       (todotxt-filter (eval `(lambda () (todotxt-current-line-match ,keyword)))))))
 
 (defun todotxt-complete-toggle ()
-  "Toggles the complete state for the item under the point In
+  "Toggles the complete state for the item under the point. In
 accordance with the spec, this also adds a completion date to
 completed items, and removes it if the item is being change to a
 'not completed' state."
