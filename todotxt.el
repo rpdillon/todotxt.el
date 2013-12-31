@@ -170,6 +170,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "p")   'previous-line)           ; (P)revious
 (define-key todotxt-mode-map (kbd "j")   'next-line)               ; Vi Binding
 (define-key todotxt-mode-map (kbd "k")   'previous-line)           ; Vi Binding
+(define-key todotxt-mode-map (kbd "?")   'describe-mode)           ; Help!
 
 ;; Utility functions
 (defun todotxt-current-line-re-match (re)
