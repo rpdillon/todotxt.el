@@ -415,7 +415,8 @@ removed."
 
 (defun todotxt-tag-item ()
   (interactive)
-  (let* ((new-tag (completing-read "Tags: " (todotxt-get-tag-completion-list-from-string (buffer-string))))e
+  (let* ((new-tag (completing-read "Tags: " (todotxt-get-tag-completion-list-from-string
+                                             (concat (todotxt-archive-file-contents) (buffer-string)))))
          (new-text (concat (todotxt-get-current-line-as-string) " " new-tag)))
     (beginning-of-line)
     (setq inhibit-read-only 't)
@@ -423,6 +424,15 @@ removed."
     (insert new-text)
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
+
+(defun todotxt-archive-file-name ()
+  (concat (file-name-directory todotxt-file) "/done.txt"))
+
+(defun todotxt-archive-file-contents ()
+  (let ((todo-buffer (current-buffer)))
+    (save-current-buffer
+      (set-buffer (find-file-noselect (todotxt-archive-file-name)))
+      (buffer-string))))
 
 (defun todotxt-archive ()
   (interactive)
@@ -436,7 +446,7 @@ removed."
                    (beginning-of-line)
                    (let ((beg (point)))
                      (forward-line)
-                     (append-to-file beg (point) (concat (file-name-directory todotxt-file) "/done.txt")))
+                     (append-to-file beg (point) (todotxt-archive-file-name)))
                      (previous-line)
                      (kill-line 1)
                    't)
@@ -460,7 +470,7 @@ removed."
 and contexts should have their preceding '+' and '@' symbols,
 respectively, if tab-completion is to be used."
   (interactive "p")
-  (let* ((keyword (completing-read "Tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
+  (let* ((keyword (completing-read "Filter for tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
     (if (equal arg 4)
         (todotxt-unhide-all))
     (goto-char (point-min))
@@ -472,7 +482,7 @@ respectively, if tab-completion is to be used."
 ; possible place for this to go
 (defun todotxt-filter-out (arg)
   (interactive "p")
-  (let* ((keyword (completing-read "Tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
+  (let* ((keyword (completing-read "Filter out tag or keyword: " (todotxt-get-tag-completion-list-from-string (buffer-string)))))
     (save-excursion
       (if (equal arg 4)
           (todotxt-unhide-all))
