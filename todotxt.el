@@ -321,7 +321,7 @@ the front and focus it.  Otherwise, create one and load the data
 from 'todotxt-file'."
   (interactive)
   (let* ((buf (find-file-noselect todotxt-file))
-         (win (get-buffer-window buf)))
+         (win (get-buffer-window buf 't)))
     (if (equal win nil)
         (progn
           (let* ((height (nth 3 (window-edges)))
@@ -331,7 +331,9 @@ from 'todotxt-file'."
           (switch-to-buffer buf)
           (todotxt-mode)
           (todotxt-prioritize-items)))
-      (select-window win))
+      (progn
+        (select-window win)
+        (select-frame-set-input-focus (selected-frame))))
     (todotxt-find-first-visible-char)))
 
 (defun todotxt-revert ()
