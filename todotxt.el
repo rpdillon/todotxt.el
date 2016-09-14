@@ -8,7 +8,7 @@
 ;; Copyright (C) 2011-2016 Rick Dillon
 
 ;; Created: 14 March 2011
-;; Version: 0.2.3
+;; Version: 0.2.4
 ;; URL: https://github.com/rpdillon/todotxt.el
 ;; Keywords: todo.txt, todotxt, todotxt.el
 ;; Compatibility: GNU Emacs 22 ~ 25
