@@ -234,13 +234,17 @@ beginning of the line containing that item."
       (todotxt-find-first-visible-char)))
 
 (defun todotxt-find-first-visible-char ()
+  "Move the point to the first visible character in the buffer."
+  (goto-char (point-min))
+  (todotxt-find-next-visible-char))
+
+(defun todotxt-find-next-visible-char ()
   "Move the point to the next character in the buffer that does
 not have an overlay applied to it.  This function exists to
 address an odd bug in which the point can exist at (point-min)
 even though it is invisible.  This usually needs to be called
 after items are filtered in some way, but perhaps in other case
 as well."
-  (goto-char (point-min))
   (while (not (equal (overlays-at (point)) nil))
     (forward-char)))
 
@@ -285,6 +289,7 @@ or '+') and return a list of them."
 resides."
   (save-excursion
     (beginning-of-line)
+    (todotxt-find-next-visible-char)
     (let ((beg (point)))
       (end-of-line)
       (buffer-substring beg (point)))))
