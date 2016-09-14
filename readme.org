@@ -1,6 +1,6 @@
 #+TITLE:     Todo.txt For Emacs (todotxt.el)
 #+AUTHOR:    R. P. Dillon
-#+EMAIL:     rpdillon@etherplex.org
+#+EMAIL:     rpdillon@killring.org
 #+DATE:      2011-03-19 Sat
 #+DESCRIPTION:
 #+KEYWORDS:
@@ -10,9 +10,12 @@
 #+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
 #+EXPORT_SELECT_TAGS: export
 #+EXPORT_EXCLUDE_TAGS: noexport
-#+LINK_UP:   
-#+LINK_HOME: 
+#+LINK_UP:
+#+LINK_HOME:
 #+XSLT:
+
+[[https://melpa.org/#/todotxt][file:https://melpa.org/packages/todotxt-badge.svg]]
+
 * Introduction
   [[http://todotxt.com][Todo.txt]] is a tool written by Gina Trapani and a community of eager
   hackers.  It allows the management of a text-based simple todo list
@@ -110,5 +113,3 @@
   - There's no indication that the list is filtered.  If you're unsure
     of the filter state, press =l= to make sure you're really seeing
     all the items.
-* Known Bugs
-  - Testers wanted!

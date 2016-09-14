@@ -5,13 +5,13 @@
 ;; Description: A major mode for editing todo.txt files
 
 ;; Author: Rick Dillon <rpdillon@killring.org>
-;; Copyright (C) 2011-2013 Rick Dillon
+;; Copyright (C) 2011-2016 Rick Dillon
 
 ;; Created: 14 March 2011
 ;; Version: 0.2.3
 ;; URL: https://github.com/rpdillon/todotxt.el
 ;; Keywords: todo.txt, todotxt, todotxt.el
-;; Compatibility: GNU Emacs 22 ~ 24
+;; Compatibility: GNU Emacs 22 ~ 25
 ;;
 ;; This file is NOT part of GNU Emacs
 
@@ -35,14 +35,17 @@
 ;; This file provides a Emacs interface to the todo.txt file format
 ;; use by Gina Trapani's Todo.txt command-line tool
 ;; (http://todotxt.com/) and Android application
-;; (https://github.com/ginatrapani/todo.txt-touch).
+;; (https://github.com/ginatrapani/todo.txt-touch).  It aims to be
+;; compatible with SimpleTask
+;; (https://github.com/mpcjanssen/simpletask-android) but does not yet
+;; have full support for all extensions.
 ;;
 ;; Setup:
 ;;  - Put todotxt.el somewhere on your Emacs path
 ;;  - Load todotxt using (require 'todotxt) in you .emacs (or other initialization) file
 ;;  - Customize the variable 'todotxt-file' with the location of your todo.txt file.
 ;;  - View the file with M-x todotxt
-;;  - Bind 'todotxt' to some accelerator like C-x t: (global-set-key (kbd "C-x t") 'todotxt)
+;;  - Bind 'todotxt' to some accelerator like C-c t: (global-set-key (kbd "C-c t") 'todotxt)
 ;;
 ;; Usage:
 ;;  - Navigate up and down with 'p' and 'n' (or 'k' and 'j')
