@@ -347,7 +347,8 @@ from 'todotxt-file'."
 (defun todotxt-revert ()
   "Revert the contents of the todotxt buffer."
   (interactive)
-  (revert-buffer nil 't 't))
+  (revert-buffer nil 't 't)
+  (setq buffer-read-only 't))
 
 (defun todotxt-show-incomplete ()
   "Filter out complete items from the todo list."
