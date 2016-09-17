@@ -49,21 +49,27 @@
   - Saving ('s') (usually not needed; most actions are saved
     automatically)
   - Reverting ('g') in case the buffer has been edited using an external tool
+  - Undo ('u') in case something goes wrong =)
 
 * Installation
-  Installation is similar to that which you would find with any Emacs package.
+  Installation is easiest through the [[https://melpa.org/#/todotxt][MELPA package]].  You can also
+  check out the code and install manually:
+
   1. You'll need to put todotxt.el somewhere on your Emacs =load-path=.
-  2. Load todotxt using =(require 'todotxt)= in you .emacs (or other
+  2. Load todotxt using =(require 'todotxt)= in your =.emacs= (or other
      initialization) file.  You can load it for evaluation by typing
-     that command either into an evaluation prompt (M-:) or by putting
-     it in =*scratch*= and pressing C-j at the end of the line
-  3. You need to tell todotxt where you todo.txt file is.  You can do
-     so by customizing the variable =todotxt-file= either by editing
-     your initialization file or by simply using =M-x
-     customize-variable=.
-  4. You can then interact with your todo list using =M-x todotxt=
-  5. Bind the =todotxt= function to some accelerator like C-x t using
-     =(global-set-key (kbd "C-x t") 'todotxt)=
+     that command either into an evaluation prompt (=M-:=) or by putting
+     it in =*scratch*= and pressing =C-j= at the end of the line
+
+  Regardless of install mechanism (MELPA or manual), a small bit of
+  setup is useful:
+
+  1. Tell todotxt where your =todo.txt= file is.  You can do so by
+     customizing the variable =todotxt-file= either by editing your
+     initialization file or by simply using =M-x customize-variable=.
+  2. You can then interact with your todo list using =M-x todotxt=
+  3. Bind the =todotxt= function to some accelerator like =C-c t=
+     using =(global-set-key (kbd "C-c t") 'todotxt)=
 
 * Usage
 ** Listing
