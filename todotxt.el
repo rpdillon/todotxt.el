@@ -68,6 +68,7 @@
 
 (defgroup todotxt nil "Todotxt is an Emacs utility to manage todo.txt files.")
 ;; Variables that are available for customization
+
 (defcustom todotxt-file (expand-file-name "~/todo.txt")
   "The location of your todo.txt file."
   :type 'string
@@ -169,6 +170,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-out)      ;
 (define-key todotxt-mode-map (kbd "g")   'todotxt-revert)          ; Revert the buffer
 (define-key todotxt-mode-map (kbd "s")   'save-buffer)             ; (S)ave
+(define-key todotxt-mode-map (kbd "u")   'todotxt-undo)            ; (U)ndo
 (define-key todotxt-mode-map (kbd "n")   'next-line)               ; (N)ext
 (define-key todotxt-mode-map (kbd "p")   'previous-line)           ; (P)revious
 (define-key todotxt-mode-map (kbd "j")   'next-line)               ; Vi Binding
@@ -348,6 +350,13 @@ from 'todotxt-file'."
   "Revert the contents of the todotxt buffer."
   (interactive)
   (revert-buffer nil 't 't))
+
+(defun todotxt-undo ()
+  "Undo the last changes to the buffer"
+  (interactive)
+  (setq inhibit-read-only 't)
+  (undo)
+  (setq inhibit-read-only 'nil))
 
 (defun todotxt-show-incomplete ()
   "Filter out complete items from the todo list."
