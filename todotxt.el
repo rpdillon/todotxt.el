@@ -89,14 +89,15 @@ performed.  Defaults to 't."
   :require 'todotxt
   :group 'todotxt)
 
-(setq tags-regexp "[+|@][^[:space:]]*") ; Used to find keywords for completion
-(setq projects-regexp "+[^[:space:]]*")
-(setq contexts-regexp "@[^[:space:]]*")
-(setq complete-regexp "^x .*?$")
-(setq priority-regexp "^(\\([A-Z]\\)) .*?$")
-(setq priority-a-regexp "^\\((A)\\) .*?$")
-(setq priority-b-regexp "^\\((B)\\) .*?$")
-(setq priority-c-regexp "^\\((C)\\) .*?$")
+(setq todotxt-tags-regexp "[+|@][^[:space:]]*") ; Used to find keywords for completion
+(setq todotxt-projects-regexp "+[^[:space:]]*")
+(setq todotxt-contexts-regexp "@[^[:space:]]*")
+(setq todotxt-complete-regexp "^x .*?$")
+(setq todotxt-priority-regexp "^(\\([A-Z]\\)) .*?$")
+(setq todotxt-priority-a-regexp "^\\((A)\\) .*?$")
+(setq todotxt-priority-b-regexp "^\\((B)\\) .*?$")
+(setq todotxt-priority-c-regexp "^\\((C)\\) .*?$")
+(setq todotxt-variable-regexp ":\\([^\s]+\\)")
 
 (setq todotxt-active-filters '())
 
@@ -140,12 +141,12 @@ performed.  Defaults to 't."
   "Todotxt mode face used for tasks with a priority of C.")
 
 (setq todotxt-highlight-regexps
-      `((,projects-regexp   0 font-lock-variable-name-face t)
-        (,contexts-regexp   0 font-lock-keyword-face t)
-        (,complete-regexp   0 todotxt-complete-face t)
-        (,priority-a-regexp 1 todotxt-priority-a-face t)
-        (,priority-b-regexp 1 todotxt-priority-b-face t)
-        (,priority-c-regexp 1 todotxt-priority-c-face t)))
+      `((,todotxt-projects-regexp   0 font-lock-variable-name-face t)
+        (,todotxt-contexts-regexp   0 font-lock-keyword-face t)
+        (,todotxt-complete-regexp   0 todotxt-complete-face t)
+        (,todotxt-priority-a-regexp 1 todotxt-priority-a-face t)
+        (,todotxt-priority-b-regexp 1 todotxt-priority-b-face t)
+        (,todotxt-priority-c-regexp 1 todotxt-priority-c-face t)))
 
 ;; Setup a major mode for todotxt
 (define-derived-mode todotxt-mode text-mode "todotxt"
@@ -166,6 +167,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "A")   'todotxt-archive)         ; (A)rchive completed items
 (define-key todotxt-mode-map (kbd "e")   'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t")   'todotxt-tag-item)        ; (T)ag item
+(define-key todotxt-mode-map (kbd "d")   'todotxt-add-due-date)    ; (D)ue date
 (define-key todotxt-mode-map (kbd "/")   'todotxt-filter-for)      ;
 (define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-out)      ;
 (define-key todotxt-mode-map (kbd "g")   'todotxt-revert)          ; Revert the buffer
@@ -201,13 +203,13 @@ matches the provided string"
 (defun todotxt-complete-p ()
   "Returns whether or not the current line is 'complete'. Used as
 part of a redefined filter for showing incomplete items only"
-  (todotxt-current-line-re-match complete-regexp))
+  (todotxt-current-line-re-match todotxt-complete-regexp))
 
 (defun todotxt-get-priority ()
   "If the current item has a priority, return it as a string.
 Otherwise, return nil."
   (let* ((line (todotxt-get-current-line-as-string))
-         (idx (string-match priority-regexp line)))
+         (idx (string-match todotxt-priority-regexp line)))
     (if idx
         (match-string-no-properties 1 line)
       nil)))
@@ -281,7 +283,7 @@ or '+') and return a list of them."
   (save-excursion
     (let ((completion-list '())
           (start-index 0))
-      (while (string-match tags-regexp string start-index)
+      (while (string-match todotxt-tags-regexp string start-index)
         (let ((tag (match-string-no-properties 0 string)))
           (if (not (member tag completion-list))
               (progn
@@ -323,6 +325,32 @@ the other items' order unaltered."
   "Returns a string with the date formatted in standard todo.txt
 format."
   (format-time-string "%Y-%m-%d"))
+
+(defun todotxt-get-variable (string variable)
+  "Reads the provided string for the specified variable"
+  (let* ((var-regexp (concat variable todotxt-variable-regexp))
+         (match-start (string-match var-regexp string))
+         (data (match-data))
+         (value-start (nth 2 data))
+         (value-end (nth 3 data)))
+    (if (or (eq match-start nil)
+            (> match-start (length string)))
+        nil
+      (substring string value-start value-end))))
+
+(defun todotxt-set-variable (string variable value)
+  "Parses the provided string, setting the specified variable to
+  the provided value, replacing the existing variable if
+  necessary."
+  (let* ((declaration (concat variable ":" value))
+         (var-regexp (concat variable todotxt-variable-regexp))
+         (var-start (string-match var-regexp string))
+         (var-end (match-end 0)))
+    (if (eq var-start nil)
+        (concat string " " declaration)
+      (let ((head (substring string 0 var-start))
+            (tail (substring string var-end)))
+        (concat head declaration tail)))))
 
 ;;; externally visible functions
 (defun todotxt ()
@@ -442,6 +470,19 @@ removed."
     (setq inhibit-read-only 't)
     (kill-line)
     (insert new-text)
+    (if todotxt-save-after-change (save-buffer))
+    (setq inhibit-read-only nil)))
+
+(defun todotxt-add-due-date ()
+  (interactive)
+  (let* ((current-line (todotxt-get-current-line-as-string))
+        (current-date (todotxt-get-variable current-line "due"))
+        (date (org-read-date))
+        (new-line (todotxt-set-variable current-line "due" date)))
+    (beginning-of-line)
+    (setq inhibit-read-only 't)
+    (kill-line)
+    (insert new-line)
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
 
