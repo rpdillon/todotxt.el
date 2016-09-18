@@ -205,13 +205,12 @@ matches the provided string"
 part of a redefined filter for showing incomplete items only"
   (todotxt-current-line-re-match todotxt-complete-regexp))
 
-(defun todotxt-get-priority ()
+(defun todotxt-get-priority (str)
   "If the current item has a priority, return it as a string.
 Otherwise, return nil."
-  (let* ((line (todotxt-get-current-line-as-string))
-         (idx (string-match todotxt-priority-regexp line)))
+  (let* ((idx (string-match todotxt-priority-regexp str)))
     (if idx
-        (match-string-no-properties 1 line)
+        (match-string-no-properties 1 str)
       nil)))
 
 (defun todotxt-hide-line ()
@@ -277,14 +276,14 @@ work."
   (inner-loop todotxt-active-filters)
   (todotxt-find-first-visible-char))
 
-(defun todotxt-get-tag-completion-list-from-string (string)
+(defun todotxt-get-tag-completion-list-from-string (str)
   "Search the buffer for tags (strings beginning with either '@'
 or '+') and return a list of them."
   (save-excursion
     (let ((completion-list '())
           (start-index 0))
       (while (string-match todotxt-tags-regexp string start-index)
-        (let ((tag (match-string-no-properties 0 string)))
+        (let ((tag (match-string-no-properties 0 str)))
           (if (not (member tag completion-list))
               (progn
                 (setq completion-list (cons tag completion-list))))
@@ -301,22 +300,26 @@ resides."
       (end-of-line)
       (buffer-substring beg (point)))))
 
-(defun todotxt-prioritize-items ()
-  "Performs a specialized sort of the lines in the buffer,
-placing prioritized items in priority order at the top leaving
-the other items' order unaltered."
+(defun todotxt-sort-key-for-string (str)
+  (let* ((due-date (or (todotxt-get-variable str "due") "9999-99-99"))
+         (priority (or (todotxt-get-priority str) "a"))
+         (key (concat due-date " " priority)))
+    key))
+
+(defun todotxt-get-due-priority-sort-key ()
+  (let* ((line (todotxt-get-current-line-as-string)))
+    (todotxt-sort-key-for-string line)))
+
+(defun todotxt-prioritize (sort-key-fun)
+  "Prioritize the list according to provided sort key function.
+  The sort key function should return the key used to sort records."
   (remove-overlays)
   (let ((nextrecfun 'forward-line)
-        (endrecfun 'end-of-line)
-        (startkeyfun (lambda ()
-                       (let ((priority (todotxt-get-priority)))
-                         (if priority
-                             priority
-                           "a")))))
+        (endrecfun 'end-of-line))
     (let ((origin (point)))
       (goto-char (point-min))
       (setq inhibit-read-only 't)
-      (sort-subr nil nextrecfun endrecfun startkeyfun)
+      (sort-subr nil nextrecfun endrecfun sort-key-fun)
       (todotxt-apply-active-filters)
       (goto-char origin))
     (setq inhibit-read-only nil)))
@@ -326,30 +329,30 @@ the other items' order unaltered."
 format."
   (format-time-string "%Y-%m-%d"))
 
-(defun todotxt-get-variable (string variable)
+(defun todotxt-get-variable (str variable)
   "Reads the provided string for the specified variable"
   (let* ((var-regexp (concat variable todotxt-variable-regexp))
-         (match-start (string-match var-regexp string))
+         (match-start (string-match var-regexp str))
          (data (match-data))
          (value-start (nth 2 data))
          (value-end (nth 3 data)))
     (if (or (eq match-start nil)
-            (> match-start (length string)))
+            (> match-start (length str)))
         nil
-      (substring string value-start value-end))))
+      (substring str value-start value-end))))
 
-(defun todotxt-set-variable (string variable value)
+(defun todotxt-set-variable (str variable value)
   "Parses the provided string, setting the specified variable to
   the provided value, replacing the existing variable if
   necessary."
   (let* ((declaration (concat variable ":" value))
          (var-regexp (concat variable todotxt-variable-regexp))
-         (var-start (string-match var-regexp string))
+         (var-start (string-match var-regexp str))
          (var-end (match-end 0)))
     (if (eq var-start nil)
-        (concat string " " declaration)
-      (let ((head (substring string 0 var-start))
-            (tail (substring string var-end)))
+        (concat str " " declaration)
+      (let ((head (substring str 0 var-start))
+            (tail (substring str var-end)))
         (concat head declaration tail)))))
 
 ;;; externally visible functions
@@ -368,7 +371,7 @@ from 'todotxt-file'."
           (select-window win)
           (switch-to-buffer buf)
           (todotxt-mode)
-          (todotxt-prioritize-items)))
+          (todotxt-prioritize 'todotxt-get-due-priority-sort-key)))
       (progn
         (select-window win)
         (select-frame-set-input-focus (selected-frame))))
@@ -418,7 +421,7 @@ the file, saving afterwards."
            (if todotxt-use-creation-dates
                (concat (todotxt-get-formatted-date) " "))
            item "\n"))
-  (todotxt-prioritize-items)
+  (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
   (if todotxt-save-after-change (save-buffer))
   (setq inhibit-read-only nil)
   (todotxt-jump-to-item item))
@@ -436,7 +439,7 @@ removed."
             (equal priority ""))
       (save-excursion
         (setq inhibit-read-only 't)
-        (if (todotxt-get-priority)
+        (if (todotxt-get-priority (todotxt-get-current-line-as-string))
             (progn
               (beginning-of-line)
               (delete-char 4)))
@@ -445,7 +448,7 @@ removed."
               (beginning-of-line)
               (insert (concat "(" (upcase priority) ") "))
               (setq inhibit-read-only nil)))
-        (todotxt-prioritize-items)
+        (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
         (if todotxt-save-after-change (save-buffer)))
       (error "%s is not a valid priority.  Try a letter between A and Z." priority))))
 
@@ -457,7 +460,7 @@ removed."
       (setq inhibit-read-only 't)
       (kill-line)
       (insert new-text)
-      (todotxt-prioritize-items)
+      (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
       (if todotxt-save-after-change (save-buffer))
       (setq inhibit-read-only nil))))
 
@@ -483,6 +486,7 @@ removed."
     (setq inhibit-read-only 't)
     (kill-line)
     (insert new-line)
+    (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
 
@@ -575,11 +579,11 @@ completed items, and removes it if the item is being change to a
       ; upon completion.  It's problematic, because there's no good
       ; way to put them back if you toggle completion back to "not
       ; done".
-      (if (todotxt-get-priority)
+      (if (todotxt-get-priority (todotxt-get-current-line-as-string))
               (delete-char 4))
       (insert (concat "x " (todotxt-get-formatted-date) " "))
       (beginning-of-line)))
-  (todotxt-prioritize-items)
+  (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
   (setq inhibit-read-only nil)
   (if todotxt-save-after-change (save-buffer)))
 
