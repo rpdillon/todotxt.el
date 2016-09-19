@@ -282,7 +282,7 @@ or '+') and return a list of them."
   (save-excursion
     (let ((completion-list '())
           (start-index 0))
-      (while (string-match todotxt-tags-regexp string start-index)
+      (while (string-match todotxt-tags-regexp str start-index)
         (let ((tag (match-string-no-properties 0 str)))
           (if (not (member tag completion-list))
               (progn
