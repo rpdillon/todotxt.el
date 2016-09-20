@@ -89,9 +89,9 @@ performed.  Defaults to 't."
   :require 'todotxt
   :group 'todotxt)
 
-(setq todotxt-tags-regexp "[+|@][^[:space:]]*") ; Used to find keywords for completion
-(setq todotxt-projects-regexp "+[^[:space:]]*")
-(setq todotxt-contexts-regexp "@[^[:space:]]*")
+(setq todotxt-tags-regexp "[+|@][[:graph:]]+") ; Used to find keywords for completion
+(setq todotxt-projects-regexp "+[[:graph:]]+")
+(setq todotxt-contexts-regexp "@[[:graph:]]+")
 (setq todotxt-complete-regexp "^x .*?$")
 (setq todotxt-priority-regexp "^(\\([A-Z]\\)) .*?$")
 (setq todotxt-priority-a-regexp "^\\((A)\\) .*?$")

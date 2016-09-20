@@ -16,7 +16,7 @@
          (new (todotxt-set-variable str "foo" "bar")))
     (should (equal new "(A) foo:bar Some other task"))))
 
-(ert-deftest todotxt-sort-key-for-string ()
+(ert-deftest todotxt-test-sort-key-for-string ()
   "It returns the expected sort key"
   (let* ((str "(A) Some other task")
          (actual (todotxt-sort-key-for-string str))
@@ -30,3 +30,11 @@
          (actual (todotxt-sort-key-for-string str))
          (expected "1776-07-04 B"))
     (should (equal actual expected))))
+
+(ert-deftest todotxt-test-tag-completion-list ()
+  "It returns a list of projects and contexts"
+  (let* ((str "Task +project1 +project2 @context1
+               Task +project1 @context2 @context3")
+         (expected '("@context1" "@context2" "@context3" "+project1" "+project2")))
+    (should (equal (sort (todotxt-get-tag-completion-list-from-string str) 'string>)
+                   (sort expected 'string>)))))
