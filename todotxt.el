@@ -180,6 +180,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "e")   'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t")   'todotxt-tag-item)        ; (T)ag item
 (define-key todotxt-mode-map (kbd "d")   'todotxt-add-due-date)    ; (D)ue date
+(define-key todotxt-mode-map (kbd "f")   'todotxt-add-future-date) ; (F)uture date
 (define-key todotxt-mode-map (kbd "/")   'todotxt-filter-for)      ;
 (define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-out)      ;
 (define-key todotxt-mode-map (kbd "g")   'todotxt-revert)          ; Revert the buffer
@@ -488,12 +489,11 @@ removed."
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
 
-(defun todotxt-add-due-date ()
-  (interactive)
+(defun todotxt-add-date (key)
   (let* ((current-line (todotxt-get-current-line-as-string))
-        (current-date (todotxt-get-variable current-line "due"))
-        (date (org-read-date))
-        (new-line (todotxt-set-variable current-line "due" date)))
+         (current-value (todotxt-get-variable current-line key))
+         (new-value (org-read-date))
+         (new-line (todotxt-set-variable current-line key new-value)))
     (beginning-of-line)
     (setq inhibit-read-only 't)
     (kill-line)
@@ -501,6 +501,14 @@ removed."
     (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
+
+(defun todotxt-add-due-date ()
+  (interactive)
+  (todotxt-add-date "due"))
+
+(defun todotxt-add-future-date ()
+  (interactive)
+  (todotxt-add-date "f"))
 
 (defun todotxt-archive-file-name ()
   (concat (file-name-directory todotxt-file) "/done.txt"))
