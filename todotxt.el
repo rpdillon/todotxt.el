@@ -89,6 +89,13 @@ performed.  Defaults to 't."
   :require 'todotxt
   :group 'todotxt)
 
+(defcustom todotxt-hide-future-tasks 't
+  "If non-nil, future tasks are hidden.
+Defaults to 't."
+  :type 'boolean
+  :require 'todotxt
+  :group 'todotxt)
+
 (setq todotxt-tags-regexp "[+|@][[:graph:]]+") ; Used to find keywords for completion
 (setq todotxt-projects-regexp "+[[:graph:]]+")
 (setq todotxt-contexts-regexp "@[[:graph:]]+")
@@ -100,8 +107,6 @@ performed.  Defaults to 't."
 (setq todotxt-due-regexp "\sdue:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
 (setq todotxt-future-regexp "\sf:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
 (setq todotxt-variable-regexp ":\\([^\s]+\\)")
-
-(setq todotxt-active-filters '())
 
 ;; Font Lock and Faces
 (defface todotxt-complete-face '(
@@ -228,6 +233,14 @@ matches the provided string"
   "Returns whether or not the current line is 'complete'. Used as
 part of a redefined filter for showing incomplete items only"
   (todotxt-current-line-re-match todotxt-complete-regexp))
+
+(defun todotxt-future-task-p ()
+  "Returns whether or not the current line is a 'future task'. Used as
+part of a redefined filter for hiding future tasks"
+  (let* ((current-line (todotxt-get-current-line-as-string))
+         (future-date (or (todotxt-get-variable current-line "f") "0000-00-00")))
+    (time-less-p (current-time) (date-to-time (concat future-date " 00:00")))))
+
 
 (defun todotxt-get-priority (str)
   "If the current item has a priority, return it as a string.
@@ -556,10 +569,20 @@ removed."
   (bury-buffer)
   (delete-window))
 
+(defun todotxt-empty-active-filters ()
+  "Empties the active filters.
+Keeps the future task filter."
+  (setq todotxt-active-filters '())
+  (if todotxt-hide-future-tasks
+      (setq todotxt-active-filters (cons 'todotxt-future-task-p todotxt-active-filters))))
+
+(todotxt-empty-active-filters)
+
 (defun todotxt-unhide-all ()
   (interactive)
   (remove-overlays)
-  (setq todotxt-active-filters '()))
+  (todotxt-empty-active-filters)
+  (todotxt-apply-active-filters))
 
 (defun todotxt-filter-for (arg)
   "Filters the todo list for a specific tag or keyword.  Projects
