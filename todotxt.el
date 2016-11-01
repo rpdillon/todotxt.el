@@ -98,6 +98,7 @@ performed.  Defaults to 't."
 (setq todotxt-priority-b-regexp "^\\((B)\\) .*?$")
 (setq todotxt-priority-c-regexp "^\\((C)\\) .*?$")
 (setq todotxt-due-regexp "\sdue:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
+(setq todotxt-future-regexp "\sf:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
 (setq todotxt-variable-regexp ":\\([^\s]+\\)")
 
 (setq todotxt-active-filters '())
@@ -151,10 +152,20 @@ performed.  Defaults to 't."
 (defvar todotxt-due-face 'todotxt-due-face
   "Todotxt mode face used for due dates.")
 
+(defface todotxt-future-face '(
+  (((class color) (background dark)) (:foreground "light blue"))
+  (((class color) (background light)) (:foreground "dark blue")))
+  "Todotxt mode face used for the date theshold of future tasks."
+  :group 'todotxt-highlighting-faces)
+
+(defvar todotxt-future-face 'todotxt-future-face
+  "Todotxt mode face used for the date threshold of future tasks.")
+
 (setq todotxt-highlight-regexps
       `((,todotxt-projects-regexp   0 font-lock-variable-name-face t)
         (,todotxt-contexts-regexp   0 font-lock-keyword-face t)
         (,todotxt-due-regexp        0 todotxt-due-face t)
+        (,todotxt-future-regexp     0 todotxt-future-face t)
         (,todotxt-complete-regexp   0 todotxt-complete-face t)
         (,todotxt-priority-a-regexp 1 todotxt-priority-a-face t)
         (,todotxt-priority-b-regexp 1 todotxt-priority-b-face t)
