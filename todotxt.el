@@ -197,6 +197,7 @@ Defaults to 't."
 (define-key todotxt-mode-map (kbd "t")   'todotxt-tag-item)        ; (T)ag item
 (define-key todotxt-mode-map (kbd "d")   'todotxt-add-due-date)    ; (D)ue date
 (define-key todotxt-mode-map (kbd "f")   'todotxt-add-future-date) ; (F)uture date
+(define-key todotxt-mode-map (kbd "F")   'todotxt-hide-future-tasks-toggle)    ; Toggle hide (F)uture date
 (define-key todotxt-mode-map (kbd "/")   'todotxt-filter-for)      ;
 (define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-out)      ;
 (define-key todotxt-mode-map (kbd "g")   'todotxt-revert)          ; Revert the buffer
@@ -608,6 +609,15 @@ respectively, if tab-completion is to be used."
       (goto-char (point-min))
       ; The contortions are to work around the lack of closures
       (todotxt-filter (eval `(lambda () (todotxt-current-line-match ,keyword)))))))
+
+(defun todotxt-hide-future-tasks-toggle ()
+  (interactive)
+  (setq todotxt-hide-future-tasks (not todotxt-hide-future-tasks))
+  (if todotxt-hide-future-tasks
+      (setq todotxt-active-filters (cons 'todotxt-future-task-p todotxt-active-filters))
+    (setq todotxt-active-filters (delete 'todotxt-future-task-p todotxt-active-filters)))
+  (remove-overlays)
+  (todotxt-apply-active-filters))
 
 (defun todotxt-complete-toggle ()
   "Toggles the complete state for the item under the point. In
