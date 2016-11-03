@@ -105,7 +105,7 @@ Defaults to 't."
 (setq todotxt-priority-b-regexp "^\\((B)\\) .*?$")
 (setq todotxt-priority-c-regexp "^\\((C)\\) .*?$")
 (setq todotxt-due-regexp "\sdue:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
-(setq todotxt-future-regexp "\sf:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
+(setq todotxt-future-regexp "\st:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
 (setq todotxt-variable-regexp ":\\([^\s]+\\)")
 
 ;; Font Lock and Faces
@@ -239,7 +239,7 @@ part of a redefined filter for showing incomplete items only"
   "Returns whether or not the current line is a 'future task'. Used as
 part of a redefined filter for hiding future tasks"
   (let* ((current-line (todotxt-get-current-line-as-string))
-         (future-date (or (todotxt-get-variable current-line "f") "0000-00-00")))
+         (future-date (or (todotxt-get-variable current-line "t") "0000-00-00")))
     (time-less-p (current-time) (date-to-time (concat future-date " 00:00")))))
 
 
@@ -533,7 +533,7 @@ removed."
 
 (defun todotxt-add-future-date ()
   (interactive)
-  (todotxt-add-date "f"))
+  (todotxt-add-date "t"))
 
 (defun todotxt-archive-file-name ()
   (concat (file-name-directory todotxt-file) "/done.txt"))
