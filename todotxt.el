@@ -96,6 +96,7 @@ Defaults to 't."
   :require 'todotxt
   :group 'todotxt)
 
+(setq todotxt-date-regexp "[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
 (setq todotxt-tags-regexp "[+|@][[:graph:]]+") ; Used to find keywords for completion
 (setq todotxt-projects-regexp "+[[:graph:]]+")
 (setq todotxt-contexts-regexp "@[[:graph:]]+")
@@ -104,8 +105,8 @@ Defaults to 't."
 (setq todotxt-priority-a-regexp "^\\((A)\\) .*?$")
 (setq todotxt-priority-b-regexp "^\\((B)\\) .*?$")
 (setq todotxt-priority-c-regexp "^\\((C)\\) .*?$")
-(setq todotxt-due-regexp "\sdue:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
-(setq todotxt-future-regexp "\st:[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
+(setq todotxt-due-regexp (concat "\sdue:" todotxt-date-regexp))
+(setq todotxt-future-regexp (concat "\st:" todotxt-date-regexp))
 (setq todotxt-variable-regexp ":\\([^\s]+\\)")
 
 ;; Font Lock and Faces
@@ -240,7 +241,8 @@ part of a redefined filter for showing incomplete items only"
 part of a redefined filter for hiding future tasks"
   (let* ((current-line (todotxt-get-current-line-as-string))
          (future-date (or (todotxt-get-variable current-line "t") "0000-00-00")))
-    (time-less-p (current-time) (date-to-time (concat future-date " 00:00")))))
+    (if (string-match todotxt-date-regexp future-date)
+        (time-less-p (current-time) (date-to-time (concat future-date " 00:00"))))))
 
 
 (defun todotxt-get-priority (str)
