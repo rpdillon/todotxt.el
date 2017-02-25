@@ -149,6 +149,7 @@ performed.  Defaults to 't."
         (,todotxt-priority-c-regexp 1 todotxt-priority-c-face t)))
 
 ;; Setup a major mode for todotxt
+;;;###autoload
 (define-derived-mode todotxt-mode text-mode "todotxt"
   "Major mode for working with todo.txt files. \\{todotxt-mode-map}"
   (setq font-lock-defaults '(todotxt-highlight-regexps))
@@ -356,6 +357,7 @@ format."
         (concat head declaration tail)))))
 
 ;;; externally visible functions
+;;;###autoload
 (defun todotxt ()
   "Open the todo.txt buffer.  If one already exists, bring it to
 the front and focus it.  Otherwise, create one and load the data
