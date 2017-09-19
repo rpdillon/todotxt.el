@@ -89,6 +89,14 @@ performed.  Defaults to 't."
   :require 'todotxt
   :group 'todotxt)
 
+(defcustom todotxt-hide-future-tasks 't
+  "If non-nil, future tasks are hidden.
+Defaults to 't."
+  :type 'boolean
+  :require 'todotxt
+  :group 'todotxt)
+
+(setq todotxt-date-regexp "[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]")
 (setq todotxt-tags-regexp "[+|@][[:graph:]]+") ; Used to find keywords for completion
 (setq todotxt-projects-regexp "+[[:graph:]]+")
 (setq todotxt-contexts-regexp "@[[:graph:]]+")
@@ -97,9 +105,9 @@ performed.  Defaults to 't."
 (setq todotxt-priority-a-regexp "^\\((A)\\) .*?$")
 (setq todotxt-priority-b-regexp "^\\((B)\\) .*?$")
 (setq todotxt-priority-c-regexp "^\\((C)\\) .*?$")
+(setq todotxt-due-regexp (concat "\sdue:" todotxt-date-regexp))
+(setq todotxt-future-regexp (concat "\st:" todotxt-date-regexp))
 (setq todotxt-variable-regexp ":\\([^\s]+\\)")
-
-(setq todotxt-active-filters '())
 
 ;; Font Lock and Faces
 (defface todotxt-complete-face '(
@@ -140,9 +148,30 @@ performed.  Defaults to 't."
 (defvar todotxt-priority-c-face 'todotxt-priority-c-face
   "Todotxt mode face used for tasks with a priority of C.")
 
+(defface todotxt-due-face '(
+  (((class color) (background dark)) (:foreground "orange red"))
+  (((class color) (background light)) (:foreground "dark red"))
+  (t (:bold t)))
+  "Todotxt mode face used for due dates."
+  :group 'todotxt-highlighting-faces)
+
+(defvar todotxt-due-face 'todotxt-due-face
+  "Todotxt mode face used for due dates.")
+
+(defface todotxt-future-face '(
+  (((class color) (background dark)) (:foreground "light blue"))
+  (((class color) (background light)) (:foreground "dark blue")))
+  "Todotxt mode face used for the date theshold of future tasks."
+  :group 'todotxt-highlighting-faces)
+
+(defvar todotxt-future-face 'todotxt-future-face
+  "Todotxt mode face used for the date threshold of future tasks.")
+
 (setq todotxt-highlight-regexps
       `((,todotxt-projects-regexp   0 font-lock-variable-name-face t)
         (,todotxt-contexts-regexp   0 font-lock-keyword-face t)
+        (,todotxt-due-regexp        0 todotxt-due-face t)
+        (,todotxt-future-regexp     0 todotxt-future-face t)
         (,todotxt-complete-regexp   0 todotxt-complete-face t)
         (,todotxt-priority-a-regexp 1 todotxt-priority-a-face t)
         (,todotxt-priority-b-regexp 1 todotxt-priority-b-face t)
@@ -169,6 +198,8 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "e")   'todotxt-edit-item)       ; (E)dit item
 (define-key todotxt-mode-map (kbd "t")   'todotxt-tag-item)        ; (T)ag item
 (define-key todotxt-mode-map (kbd "d")   'todotxt-add-due-date)    ; (D)ue date
+(define-key todotxt-mode-map (kbd "f")   'todotxt-add-future-date) ; (F)uture date
+(define-key todotxt-mode-map (kbd "F")   'todotxt-hide-future-tasks-toggle)    ; Toggle hide (F)uture date
 (define-key todotxt-mode-map (kbd "/")   'todotxt-filter-for)      ;
 (define-key todotxt-mode-map (kbd "\\")  'todotxt-filter-out)      ;
 (define-key todotxt-mode-map (kbd "g")   'todotxt-revert)          ; Revert the buffer
@@ -205,6 +236,15 @@ matches the provided string"
   "Returns whether or not the current line is 'complete'. Used as
 part of a redefined filter for showing incomplete items only"
   (todotxt-current-line-re-match todotxt-complete-regexp))
+
+(defun todotxt-future-task-p ()
+  "Returns whether or not the current line is a 'future task'. Used as
+part of a redefined filter for hiding future tasks"
+  (let* ((current-line (todotxt-get-current-line-as-string))
+         (future-date (or (todotxt-get-variable current-line "t") "0000-00-00")))
+    (if (string-match todotxt-date-regexp future-date)
+        (time-less-p (current-time) (date-to-time (concat future-date " 00:00"))))))
+
 
 (defun todotxt-get-priority (str)
   "If the current item has a priority, return it as a string.
@@ -478,12 +518,11 @@ removed."
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
 
-(defun todotxt-add-due-date ()
-  (interactive)
+(defun todotxt-add-date (key)
   (let* ((current-line (todotxt-get-current-line-as-string))
-        (current-date (todotxt-get-variable current-line "due"))
-        (date (org-read-date))
-        (new-line (todotxt-set-variable current-line "due" date)))
+         (current-value (todotxt-get-variable current-line key))
+         (new-value (org-read-date))
+         (new-line (todotxt-set-variable current-line key new-value)))
     (beginning-of-line)
     (setq inhibit-read-only 't)
     (kill-line)
@@ -491,6 +530,14 @@ removed."
     (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
+
+(defun todotxt-add-due-date ()
+  (interactive)
+  (todotxt-add-date "due"))
+
+(defun todotxt-add-future-date ()
+  (interactive)
+  (todotxt-add-date "t"))
 
 (defun todotxt-archive-file-name ()
   (concat (file-name-directory todotxt-file) "/done.txt"))
@@ -527,10 +574,20 @@ removed."
   (bury-buffer)
   (delete-window))
 
+(defun todotxt-empty-active-filters ()
+  "Empties the active filters.
+Keeps the future task filter."
+  (setq todotxt-active-filters '())
+  (if todotxt-hide-future-tasks
+      (setq todotxt-active-filters (cons 'todotxt-future-task-p todotxt-active-filters))))
+
+(todotxt-empty-active-filters)
+
 (defun todotxt-unhide-all ()
   (interactive)
   (remove-overlays)
-  (setq todotxt-active-filters '()))
+  (todotxt-empty-active-filters)
+  (todotxt-apply-active-filters))
 
 (defun todotxt-filter-for (arg)
   "Filters the todo list for a specific tag or keyword.  Projects
@@ -556,6 +613,15 @@ respectively, if tab-completion is to be used."
       (goto-char (point-min))
       ; The contortions are to work around the lack of closures
       (todotxt-filter (eval `(lambda () (todotxt-current-line-match ,keyword)))))))
+
+(defun todotxt-hide-future-tasks-toggle ()
+  (interactive)
+  (setq todotxt-hide-future-tasks (not todotxt-hide-future-tasks))
+  (if todotxt-hide-future-tasks
+      (setq todotxt-active-filters (cons 'todotxt-future-task-p todotxt-active-filters))
+    (setq todotxt-active-filters (delete 'todotxt-future-task-p todotxt-active-filters)))
+  (remove-overlays)
+  (todotxt-apply-active-filters))
 
 (defun todotxt-complete-toggle ()
   "Toggles the complete state for the item under the point. In
