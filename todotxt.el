@@ -297,7 +297,6 @@ or '+') and return a list of them."
 resides."
   (save-excursion
     (beginning-of-line)
-    (todotxt-find-next-visible-char)
     (let ((beg (point)))
       (end-of-line)
       (buffer-substring beg (point)))))
