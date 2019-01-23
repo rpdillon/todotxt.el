@@ -298,6 +298,11 @@ or '+') and return a list of them."
 resides."
   (save-excursion
     (beginning-of-line)
+    "todotxt-find-nex-visible-char fixes a bug
+     but it is not compatible with some modes"
+    (unless (or (bound-and-true-p hl-line-mode)
+                (bound-and-true-p global-hl-line-mode))
+        (todotxt-find-next-visible-char))
     (let ((beg (point)))
       (end-of-line)
       (buffer-substring beg (point)))))
