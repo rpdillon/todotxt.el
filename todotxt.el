@@ -163,6 +163,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "c")   'todotxt-complete-toggle) ; (C)omplete item
 (define-key todotxt-mode-map (kbd "N")   'todotxt-nuke-item)       ; (N)uke item
 (define-key todotxt-mode-map (kbd "a")   'todotxt-add-item)        ; (A)dd item
+(define-key todotxt-mode-map (kbd "C")   'todotxt-copy-item)       ; (C)opy item
 (define-key todotxt-mode-map (kbd "q")   'todotxt-bury)            ; (Q)uit
 (define-key todotxt-mode-map (kbd "r")   'todotxt-add-priority)    ; Add p(r)iority
 (define-key todotxt-mode-map (kbd "A")   'todotxt-archive)         ; (A)rchive completed items
@@ -178,6 +179,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "p")   'previous-line)           ; (P)revious
 (define-key todotxt-mode-map (kbd "j")   'next-line)               ; Vi Binding
 (define-key todotxt-mode-map (kbd "k")   'previous-line)           ; Vi Binding
+(define-key todotxt-mode-map (kbd "h")   'describe-mode)           ; Help!
 (define-key todotxt-mode-map (kbd "?")   'describe-mode)           ; Help!
 
 ;; Utility functions
@@ -296,7 +298,11 @@ or '+') and return a list of them."
 resides."
   (save-excursion
     (beginning-of-line)
-    (todotxt-find-next-visible-char)
+    "todotxt-find-nex-visible-char fixes a bug
+     but it is not compatible with some modes"
+    (unless (or (bound-and-true-p hl-line-mode)
+                (bound-and-true-p global-hl-line-mode))
+        (todotxt-find-next-visible-char))
     (let ((beg (point)))
       (end-of-line)
       (buffer-substring beg (point)))))
@@ -491,6 +497,16 @@ removed."
     (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
+
+(defun todotxt-copy-item ()
+  (interactive)
+  (let* ((current-line (todotxt-get-current-line-as-string)))
+        (setq inhibit-read-only 't)
+	(next-line)
+        (insert (concat current-line "\n"))
+        (setq inhibit-read-only nil)))
+        ;(todotxt-edit-item)))
+
 
 (defun todotxt-transpose-lines (&optional backward)
   (todotxt-find-next-visible-char)
