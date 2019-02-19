@@ -252,7 +252,7 @@ address an odd bug in which the point can exist at (point-min)
 even though it is invisible.  This usually needs to be called
 after items are filtered in some way, but perhaps in other case
 as well."
-  (while (not (equal (overlays-at (point)) nil))
+  (while (invisible-p (point))
     (forward-char)))
 
 (defun todotxt-filter (predicate)
