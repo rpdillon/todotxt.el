@@ -294,12 +294,15 @@ or '+') and return a list of them."
 (defun todotxt-get-current-line-as-string ()
   "Return the text of the line in which the point currently
 resides."
-  (save-excursion
-    (beginning-of-line)
-    (todotxt-find-next-visible-char)
-    (let ((beg (point)))
-      (end-of-line)
-      (buffer-substring beg (point)))))
+  (let* ((current-line (save-excursion
+			 (beginning-of-line)
+			 (todotxt-find-next-visible-char)
+			 (let ((beg (point)))
+			   (end-of-line)
+			   (buffer-substring beg (point))))))
+    (when (string= "" current-line)
+      (error "The current line was resolved to be empty - this should not happen."))
+    current-line))
 
 (defun todotxt-sort-key-for-string (str)
   (let* ((due-date (or (todotxt-get-variable str "due") "9999-99-99"))
