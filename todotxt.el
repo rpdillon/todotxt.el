@@ -214,6 +214,10 @@ Otherwise, return nil."
         (match-string-no-properties 1 str)
       nil)))
 
+(defun todotxt-remove-overlays ()
+  "Remove 'invisible overlay, without affecting other overlays."
+  (remove-overlays (point-min) (point-max) 'invisible 't))
+
 (defun todotxt-hide-line ()
   "Hides the current line, returns 't"
   (beginning-of-line)
@@ -237,8 +241,7 @@ beginning of the line containing that item."
   (todotxt-find-first-visible-char)
   (search-forward item)
   (beginning-of-line)
-  (if (not (equal (overlays-at (point)) nil))
-      (todotxt-find-first-visible-char)))
+  (todotxt-find-first-visible-char))
 
 (defun todotxt-find-first-visible-char ()
   "Move the point to the first visible character in the buffer."
@@ -252,7 +255,7 @@ address an odd bug in which the point can exist at (point-min)
 even though it is invisible.  This usually needs to be called
 after items are filtered in some way, but perhaps in other case
 as well."
-  (while (not (equal (overlays-at (point)) nil))
+  (while (invisible-p)
     (forward-char)))
 
 (defun todotxt-filter (predicate)
@@ -317,7 +320,7 @@ resides."
 (defun todotxt-prioritize (sort-key-fun)
   "Prioritize the list according to provided sort key function.
   The sort key function should return the key used to sort records."
-  (remove-overlays)
+  (todotxt-remove-overlays)
   (let ((nextrecfun 'forward-line)
         (endrecfun 'end-of-line))
     (let ((origin (point)))
@@ -514,7 +517,7 @@ removed."
             (todotxt-sort-key-for-string dest-line-string)))
       (beginning-of-line)
       (save-excursion
-        (remove-overlays)
+        (todotxt-remove-overlays)
         (forward-line)
         (setq inhibit-read-only t)
         (transpose-lines range)
@@ -543,7 +546,7 @@ removed."
 (defun todotxt-archive ()
   (interactive)
   (save-excursion
-    (remove-overlays)
+    (todotxt-remove-overlays)
     (goto-char (point-min))
     (setq inhibit-read-only 't)
     (while (progn
@@ -568,7 +571,7 @@ removed."
 
 (defun todotxt-unhide-all ()
   (interactive)
-  (remove-overlays)
+  (todotxt-remove-overlays)
   (setq todotxt-active-filters '()))
 
 (defun todotxt-filter-for (arg)
