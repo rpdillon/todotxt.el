@@ -214,6 +214,10 @@ Otherwise, return nil."
         (match-string-no-properties 1 str)
       nil)))
 
+(defun todotxt-remove-overlays ()
+  "Remove 'invisible overlay, without affecting other overlays."
+  (remove-overlays (point-min) (point-max) 'invisible 't))
+
 (defun todotxt-hide-line ()
   "Hides the current line, returns 't"
   (beginning-of-line)
@@ -237,8 +241,7 @@ beginning of the line containing that item."
   (todotxt-find-first-visible-char)
   (search-forward item)
   (beginning-of-line)
-  (if (not (equal (overlays-at (point)) nil))
-      (todotxt-find-first-visible-char)))
+  (todotxt-find-first-visible-char))
 
 (defun todotxt-find-first-visible-char ()
   "Move the point to the first visible character in the buffer."
@@ -296,12 +299,15 @@ or '+') and return a list of them."
 (defun todotxt-get-current-line-as-string ()
   "Return the text of the line in which the point currently
 resides."
-  (save-excursion
-    (beginning-of-line)
-    (todotxt-find-next-visible-char)
-    (let ((beg (point)))
-      (end-of-line)
-      (buffer-substring beg (point)))))
+  (let* ((current-line (save-excursion
+			 (beginning-of-line)
+			 (todotxt-find-next-visible-char)
+			 (let ((beg (point)))
+			   (end-of-line)
+			   (buffer-substring beg (point))))))
+    (when (string= "" current-line)
+      (error "The current line was resolved to be empty - this should not happen."))
+    current-line))
 
 (defun todotxt-sort-key-for-string (str)
   (let* ((due-date (or (todotxt-get-variable str "due") "9999-99-99"))
@@ -316,7 +322,7 @@ resides."
 (defun todotxt-prioritize (sort-key-fun)
   "Prioritize the list according to provided sort key function.
   The sort key function should return the key used to sort records."
-  (remove-overlays)
+  (todotxt-remove-overlays)
   (let ((nextrecfun 'forward-line)
         (endrecfun 'end-of-line))
     (let ((origin (point)))
@@ -513,7 +519,7 @@ removed."
             (todotxt-sort-key-for-string dest-line-string)))
       (beginning-of-line)
       (save-excursion
-        (remove-overlays)
+        (todotxt-remove-overlays)
         (forward-line)
         (setq inhibit-read-only t)
         (transpose-lines range)
@@ -542,7 +548,7 @@ removed."
 (defun todotxt-archive ()
   (interactive)
   (save-excursion
-    (remove-overlays)
+    (todotxt-remove-overlays)
     (goto-char (point-min))
     (setq inhibit-read-only 't)
     (while (progn
@@ -567,7 +573,7 @@ removed."
 
 (defun todotxt-unhide-all ()
   (interactive)
-  (remove-overlays)
+  (todotxt-remove-overlays)
   (setq todotxt-active-filters '()))
 
 (defun todotxt-filter-for (arg)
