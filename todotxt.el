@@ -5,13 +5,13 @@
 ;; Description: A major mode for editing todo.txt files
 
 ;; Author: Rick Dillon <rpdillon@killring.org>
-;; Copyright (C) 2011-2016 Rick Dillon
+;; Copyright (C) 2011-2020 Rick Dillon
 
 ;; Created: 14 March 2011
-;; Version: 0.2.4
+;; Version: 0.2.5
 ;; URL: https://github.com/rpdillon/todotxt.el
 ;; Keywords: todo.txt, todotxt, todotxt.el
-;; Compatibility: GNU Emacs 22 ~ 25
+;; Compatibility: GNU Emacs 22 ~ 26
 ;;
 ;; This file is NOT part of GNU Emacs
 
@@ -179,6 +179,7 @@ performed.  Defaults to 't."
 (define-key todotxt-mode-map (kbd "j")   'next-line)               ; Vi Binding
 (define-key todotxt-mode-map (kbd "k")   'previous-line)           ; Vi Binding
 (define-key todotxt-mode-map (kbd "?")   'describe-mode)           ; Help!
+(define-key todotxt-mode-map (kbd "h")   'describe-mode)           ; Help!
 
 ;; Utility functions
 (defun todotxt-current-line-re-match (re)
