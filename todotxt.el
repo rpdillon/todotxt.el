@@ -489,6 +489,7 @@ removed."
 
 (defun todotxt-add-due-date ()
   (interactive)
+  (require 'org)
   (let* ((current-line (todotxt-get-current-line-as-string))
         (current-date (todotxt-get-variable current-line "due"))
         (date (org-read-date))
