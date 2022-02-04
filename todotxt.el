@@ -365,6 +365,11 @@ format."
             (tail (substring str var-end)))
         (concat head declaration tail)))))
 
+(defun todotxt-delete-line ()
+  "Delete whole current line up to newline."
+  (beginning-of-line)
+  (delete-region (point) (line-end-position)))
+
 ;;; externally visible functions
 ;;;###autoload
 (defun todotxt ()
@@ -467,9 +472,8 @@ removed."
   (interactive)
   (save-excursion
     (let ((new-text (read-from-minibuffer "Edit: " (todotxt-get-current-line-as-string))))
-      (beginning-of-line)
       (setq inhibit-read-only 't)
-      (kill-line)
+      (todotxt-delete-line)
       (insert new-text)
       (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
       (if todotxt-save-after-change (save-buffer))
@@ -480,9 +484,8 @@ removed."
   (let* ((new-tag (completing-read "Tags: " (todotxt-get-tag-completion-list-from-string
                                              (concat (todotxt-archive-file-contents) (buffer-string)))))
          (new-text (concat (todotxt-get-current-line-as-string) " " new-tag)))
-    (beginning-of-line)
     (setq inhibit-read-only 't)
-    (kill-line)
+    (todotxt-delete-line)
     (insert new-text)
     (if todotxt-save-after-change (save-buffer))
     (setq inhibit-read-only nil)))
@@ -493,9 +496,8 @@ removed."
         (current-date (todotxt-get-variable current-line "due"))
         (date (org-read-date))
         (new-line (todotxt-set-variable current-line "due" date)))
-    (beginning-of-line)
     (setq inhibit-read-only 't)
-    (kill-line)
+    (todotxt-delete-line)
     (insert new-line)
     (todotxt-prioritize 'todotxt-get-due-priority-sort-key)
     (if todotxt-save-after-change (save-buffer))
