@@ -241,8 +241,7 @@ Otherwise, return nil."
 beginning of the line containing that item."
   (todotxt-find-first-visible-char)
   (search-forward item)
-  (beginning-of-line)
-  (todotxt-find-first-visible-char))
+  (beginning-of-line))
 
 (defun todotxt-find-first-visible-char ()
   "Move the point to the first visible character in the buffer."
